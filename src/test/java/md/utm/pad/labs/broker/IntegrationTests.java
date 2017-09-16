@@ -6,7 +6,8 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
 @SuiteClasses({
-	JsonRequestFactoryTest.class
+	JsonRequestResponseFactoryTest.class,
+	ClientHandlerImplIntegrationTest.class
 })
 public class IntegrationTests {
 
