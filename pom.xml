@@ -13,6 +13,7 @@
 	<modules>
 		<module>broker-client</module>
 		<module>broker-server</module>
+		<module>broker-utils</module>
 	</modules>
 
 	<build>

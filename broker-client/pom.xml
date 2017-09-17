@@ -7,4 +7,13 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>broker-client</artifactId>
+
+	<dependencies>
+		<dependency>
+			<groupId>md.utm.pad.labs</groupId>
+			<artifactId>broker-utils</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
+
 </project>
