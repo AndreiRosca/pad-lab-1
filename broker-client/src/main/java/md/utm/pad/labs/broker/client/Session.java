@@ -19,7 +19,7 @@ public class Session {
 	public Queue createQueue(String queueName) {
 		Request request = new Request("createQueue", queueName);
 		connection.getClientChannel().write(jsonService.toJson(request));
-		return new Queue(queueName);
+		return new Queue(this, queueName);
 	}
 
 	public Message createMessage(String payload) {

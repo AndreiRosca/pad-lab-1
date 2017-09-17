@@ -1,16 +1,24 @@
 package md.utm.pad.labs.broker;
 
+import md.utm.pad.labs.broker.executor.RequestExecutor;
+import md.utm.pad.labs.broker.executor.RequestExecutorFactory;
+
 public class ClientHandlerImpl implements ClientHandler {
 
 	private final ClientChannel channel;
 	private final RequestResponseFactory factory;
 	private final BrokerContext brokerContext;
-	private boolean closeRequested = false;
+	private RequestExecutorFactory executorFactory;
 
 	public ClientHandlerImpl(ClientChannel channel, RequestResponseFactory factory, BrokerContext brokerContext) {
 		this.channel = channel;
 		this.factory = factory;
 		this.brokerContext = brokerContext;
+		this.executorFactory = createRequestExecutorFactory();
+	}
+
+	protected RequestExecutorFactory createRequestExecutorFactory() {
+		return new RequestExecutorFactory(brokerContext);
 	}
 
 	@Override
@@ -29,25 +37,18 @@ public class ClientHandlerImpl implements ClientHandler {
 		do {
 			String jsonRequest = readJsonRequest();
 			if (jsonRequest.isEmpty())
-				break;
+				continue;
 			Request request = factory.makeRequest(jsonRequest);
-			RequestExecutor executor = makeExecutor(request);
+			RequestExecutor executor = executorFactory.makeExecutor(request);
 			Response response = executor.execute();
-			System.out.println("Got request: " + request + "; Sending response:" + response);
-			if (response.getType().equals("closeAccepted"))
+			if (isCloseResponse(response))
 				break;
 			channel.write(factory.makeResponse(response));
-		} while (!closeRequested);
+		} while (true);
 	}
 
-	private RequestExecutor makeExecutor(Request request) {
-		if (request.getCommand().equalsIgnoreCase("send"))
-			return new SendMessageRequestExecutor(request);
-		else if (request.getCommand().equalsIgnoreCase("receive"))
-			return new ReceiveMessageRequestExecutor(request);
-		else if (request.getCommand().equalsIgnoreCase("close"))
-			return new CloseConnectionRequestExecutor(request);
-		throw new InvalidRequestException("Invalid request type. Expected send|receive.");
+	private boolean isCloseResponse(Response response) {
+		return response.getType().equals("closeAccepted");
 	}
 
 	private String readJsonRequest() {
@@ -57,62 +58,5 @@ public class ClientHandlerImpl implements ClientHandler {
 			requestBuilder.append(line);
 		}
 		return requestBuilder.toString();
-	}
-
-	private abstract class RequestExecutor {
-		protected final Request request;
-
-		public RequestExecutor(Request request) {
-			this.request = request;
-		}
-
-		public abstract Response execute();
-	}
-
-	private class SendMessageRequestExecutor extends RequestExecutor {
-		public SendMessageRequestExecutor(Request request) {
-			super(request);
-		}
-
-		@Override
-		public Response execute() {
-			brokerContext.sendMessage(request.getTargetQueueName(), new Message(request.getPayload()));
-			return new Response("response", "success");
-		}
-	}
-
-	private class ReceiveMessageRequestExecutor extends RequestExecutor {
-		public ReceiveMessageRequestExecutor(Request request) {
-			super(request);
-		}
-
-		@Override
-		public Response execute() {
-			Message message = brokerContext.receiveMessage(request.getTargetQueueName());
-			return new ReceiveMessageResponse("response", "success", message);
-		}
-	}
-
-	private class CloseConnectionRequestExecutor extends RequestExecutor {
-		public CloseConnectionRequestExecutor(Request request) {
-			super(request);
-		}
-
-		@Override
-		public Response execute() {
-			closeRequested = true;
-			return new Response("closeAccepted", "success");
-		}
-	}
-
-	public static class InvalidRequestException extends RuntimeException {
-		private static final long serialVersionUID = 1L;
-
-		public InvalidRequestException() {
-		}
-
-		public InvalidRequestException(String message) {
-			super(message);
-		}
 	}
 }

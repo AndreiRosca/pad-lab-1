@@ -7,7 +7,8 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
 	MessageTest.class,
-	ClientHandlerImplTest.class
+	ClientHandlerImplTest.class,
+	BrokerContextTest.class
 })
 public class UnitTests {
 

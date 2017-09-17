@@ -17,7 +17,8 @@ import de.bechte.junit.runners.context.HierarchicalContextRunner;
 public class ClientHandlerImplTest {
 
 	public class BasicClientHandlerTest {
-		private static final String jsonRequest = "{ \"command\": \"<send|read>\", \"payload\": \"<payload>\" }";
+		private static final String jsonRequest = "{ \"command\": \"send\", \"payload\": \"<payload>\" }";
+		private static final String sendCloseRequest = "{\"command\":\"close\",\"payload\":\"\"}";
 
 		private ClientChannel channel = mock(ClientChannel.class);
 		private RequestResponseFactory factory = mock(RequestResponseFactory.class);
@@ -25,22 +26,23 @@ public class ClientHandlerImplTest {
 
 		@Before
 		public void setUp() {
-			when(channel.readLine()).thenReturn(jsonRequest, (String) null);
-			when(factory.makeRequest(anyString())).thenReturn(new Request("send", "<payload>", "EM_TEST.Q"));
+			when(channel.readLine()).thenReturn(jsonRequest, "", sendCloseRequest, (String) null);
+			when(factory.makeRequest(anyString())).thenReturn(new Request("send", "<payload>", "EM_TEST.Q"), new Request("close", ""));
 		}
 
 		@Test
 		public void canReadJsonRequestFromChannel() {
 			ClientHandlerImpl handler = new ClientHandlerImpl(channel, factory, context);
 			handler.handleClient();
-			verify(channel, times(2)).readLine();
-			verify(factory).makeRequest(anyString());
+			verify(channel, times(4)).readLine();
+			verify(factory, times(2)).makeRequest(anyString());
 		}
 	}
 
 	public class ClientHandlerUsesBrokerContext {
 		private static final String sendMessageRequest = "{ \"command\": \"send\", \"payload\": \"<payload>\", "
 				+ "\"targetQueueName\": \"EM_TEST.Q\" }";
+		private static final String sendCloseRequest = "{\"command\":\"close\",\"payload\":\"\"}";
 
 		private ClientChannel channel = mock(ClientChannel.class);
 		private RequestResponseFactory factory = mock(RequestResponseFactory.class);
@@ -49,8 +51,8 @@ public class ClientHandlerImplTest {
 
 		@Before
 		public void setUp() {
-			when(channel.readLine()).thenReturn(sendMessageRequest, (String) null);
-			when(factory.makeRequest(anyString())).thenReturn(new Request("send", "EM_TEST.Q", "<payload>"));
+			when(channel.readLine()).thenReturn(sendMessageRequest, "", sendCloseRequest, (String) null);
+			when(factory.makeRequest(anyString())).thenReturn(new Request("send", "EM_TEST.Q", "<payload>"), new Request("close", ""));
 			when(context.receiveMessage(anyString())).thenReturn(new Message("<payload>"));
 			handler = new ClientHandlerImpl(channel, factory, context);
 			handler.handleClient();

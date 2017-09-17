@@ -31,7 +31,8 @@ public class BrokerContext {
 	public void createQueue(String queueName) throws InvalidQueueNameException {
 		if (queueName == null || queueName.isEmpty())
 			throw new InvalidQueueNameException();
-		queues.put(queueName, new MessageQueue(queueName));
+		if (!queues.containsKey(queueName))
+			queues.put(queueName, new MessageQueue(queueName));
 	}
 
 	public boolean queueExists(String queueName) {

@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,10 +53,10 @@ public class SessionTest {
 	@Test
 	public void canSendMessagesToExistingQueues() {
 		Message message = session.createMessage("Hello");
-		Queue queue = new Queue("EM_TEST.Q");
+		Queue queue = session.createQueue("EM_TEST.Q");
 		session.sendMessage(queue, message);
 		verify(jsonService).toJson(new Request("send", queue.getName(), "Hello"));
-		verify(channel).write(anyString());
+		verify(channel, times(2)).write(anyString());
 	}
 
 	@Test
@@ -68,7 +69,7 @@ public class SessionTest {
 
 	@Test
 	public void canReceiveMessagesFromExistingQueues() {
-		Message message = session.receiveMessage(new Queue("EM_TEST.Q"));
+		Message message = session.receiveMessage(session.createQueue("EM_TEST.Q"));
 		verify(jsonService).toJson(new Request("receive", "EM_TEST.Q"));
 		verify(jsonService).fromJson(anyString(), eq(ReceiveMessageResponse.class));
 		assertEquals(new Message("Test"), message);
