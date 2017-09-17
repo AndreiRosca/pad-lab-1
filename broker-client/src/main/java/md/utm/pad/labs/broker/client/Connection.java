@@ -2,19 +2,22 @@ package md.utm.pad.labs.broker.client;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.net.URL;
+import java.net.URI;
 
 import md.utm.pad.labs.broker.ClientChannel;
+import md.utm.pad.labs.broker.Request;
 import md.utm.pad.labs.broker.SocketClientChannel;
+import md.utm.pad.labs.broker.client.service.DefaultJsonService;
+import md.utm.pad.labs.broker.client.service.JsonService;
 
-public class Connection {
+public class Connection implements AutoCloseable {
 
 	private Socket socket;
-	private final URL url;
+	private final URI uri;
 	private ClientChannel channel;
 
-	public Connection(URL url) {
-		this.url = url;
+	public Connection(URI uri) {
+		this.uri = uri;
 	}
 
 	protected ClientChannel createClientChannel(Socket s) {
@@ -25,11 +28,19 @@ public class Connection {
 		return channel;
 	}
 
+	public Session createSession() {
+		return new Session(this, getJsonService());
+	}
+
+	protected JsonService getJsonService() {
+		return new DefaultJsonService();
+	}
+
 	public void start() throws UnknownProtocolException {
 		try {
-			if (!url.getProtocol().equals("tcp"))
+			if (!uri.getScheme().equals("tcp"))
 				throw new UnknownProtocolException("Expected the 'tcp://' protocol.");
-			socket = new Socket(url.getHost(), url.getPort());
+			socket = new Socket(uri.getHost(), uri.getPort());
 			channel = createClientChannel(socket);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -37,11 +48,8 @@ public class Connection {
 	}
 
 	public void close() {
-		try {
-			socket.close();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		channel.write(getJsonService().toJson(new Request("close", "")));
+		channel.close();
 	}
 
 	public static class UnknownProtocolException extends RuntimeException {
