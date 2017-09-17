@@ -1,10 +1,12 @@
 package md.utm.pad.labs.broker.executor;
 
 import md.utm.pad.labs.broker.BrokerContext;
+import md.utm.pad.labs.broker.ClientChannel;
 import md.utm.pad.labs.broker.Message;
 import md.utm.pad.labs.broker.ReceiveMessageResponse;
 import md.utm.pad.labs.broker.Request;
 import md.utm.pad.labs.broker.Response;
+import md.utm.pad.labs.broker.subscriber.Subscriber;
 
 public class RequestExecutorFactory {
 
@@ -14,7 +16,7 @@ public class RequestExecutorFactory {
 		this.brokerContext = brokerContext;
 	}
 
-	public RequestExecutor makeExecutor(Request request) throws InvalidRequestException {
+	public RequestExecutor makeExecutor(Request request, ClientChannel channel) throws InvalidRequestException {
 		if (request.getCommand().equalsIgnoreCase("send"))
 			return new SendMessageRequestExecutor(request);
 		else if (request.getCommand().equalsIgnoreCase("receive"))
@@ -23,6 +25,8 @@ public class RequestExecutorFactory {
 			return new CloseConnectionRequestExecutor(request);
 		else if (request.getCommand().equalsIgnoreCase("createQueue"))
 			return new CreateQueueRequestExecutor(request);
+		else if (request.getCommand().equalsIgnoreCase("subscribe"))
+			return new SubscribeToQueueRequestExecutor(request, channel);
 		throw new InvalidRequestException("Invalid request type. Expected send|receive.");
 	}
 
@@ -68,7 +72,22 @@ public class RequestExecutorFactory {
 
 		@Override
 		public Response execute() {
-			brokerContext.createQueue(request.getPayload());
+			brokerContext.createQueue(request.getTargetQueueName());
+			return new Response("response", "success");
+		}
+	}
+
+	private class SubscribeToQueueRequestExecutor extends RequestExecutor {
+		private final ClientChannel channel;
+
+		public SubscribeToQueueRequestExecutor(Request request, ClientChannel channel) {
+			super(request);
+			this.channel = channel;
+		}
+
+		@Override
+		public Response execute() {
+			brokerContext.registerSubscriber(request.getTargetQueueName(), new Subscriber(channel, request.getTargetQueueName()));
 			return new Response("response", "success");
 		}
 	}

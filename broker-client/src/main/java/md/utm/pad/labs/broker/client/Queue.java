@@ -4,7 +4,6 @@ public class Queue {
 
 	private final String name;
 	private final Session session;
-	private MessageListener messageListener;
 
 	public Queue(Session session, String name) {
 		this.session = session;
@@ -14,9 +13,8 @@ public class Queue {
 	public String getName() {
 		return name;
 	}
-	
+
 	public void setMessageListener(MessageListener messageListener) {
-		this.messageListener = messageListener;
-		//Todo:
+		session.registerSubscriber(name, messageListener);
 	}
 }

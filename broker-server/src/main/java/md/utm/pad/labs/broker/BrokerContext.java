@@ -1,19 +1,32 @@
 package md.utm.pad.labs.broker;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+
+import md.utm.pad.labs.broker.subscriber.Subscriber;
 
 public class BrokerContext {
 	private static final String DEFAULT_QUEUE_NAME = "__EnterpriseMessaging_DEFAULT.QUEUE__";
 
 	private final Map<String, MessageQueue> queues = new ConcurrentHashMap<>();
+	private final Map<String, Set<Subscriber>> subscribers = new ConcurrentHashMap<>();
 
 	public BrokerContext() {
 		createQueue(DEFAULT_QUEUE_NAME);
 	}
 
+	private void publishMessageToSubscribers(String queueName, Message message) {
+		Set<Subscriber> queueSubscribers = subscribers.get(queueName);
+		if (queueSubscribers != null) {
+			queueSubscribers.forEach(s -> s.consumeMessage(message));
+		}
+	}
+
 	public void sendMessage(String queueName, Message message) {
 		queues.getOrDefault(queueName, queues.get(DEFAULT_QUEUE_NAME)).addMessage(message);
+		publishMessageToSubscribers(queueName, message);
 	}
 
 	public void sendMessage(Message message) {
@@ -56,5 +69,11 @@ public class BrokerContext {
 		public InvalidQueueNameException(String message) {
 			super(message);
 		}
+	}
+
+	public void registerSubscriber(String queueName, Subscriber subscriber) {
+		if (!subscribers.containsKey(queueName))
+			subscribers.put(queueName, new CopyOnWriteArraySet<>());
+		subscribers.get(queueName).add(subscriber);
 	}
 }

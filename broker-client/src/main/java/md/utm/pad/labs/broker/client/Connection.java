@@ -7,8 +7,8 @@ import java.net.URI;
 import md.utm.pad.labs.broker.ClientChannel;
 import md.utm.pad.labs.broker.Request;
 import md.utm.pad.labs.broker.SocketClientChannel;
-import md.utm.pad.labs.broker.client.service.DefaultJsonService;
-import md.utm.pad.labs.broker.client.service.JsonService;
+import md.utm.pad.labs.broker.service.DefaultJsonService;
+import md.utm.pad.labs.broker.service.JsonService;
 
 public class Connection implements AutoCloseable {
 

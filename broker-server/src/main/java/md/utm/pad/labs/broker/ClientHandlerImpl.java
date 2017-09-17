@@ -39,7 +39,7 @@ public class ClientHandlerImpl implements ClientHandler {
 			if (jsonRequest.isEmpty())
 				continue;
 			Request request = factory.makeRequest(jsonRequest);
-			RequestExecutor executor = executorFactory.makeExecutor(request);
+			RequestExecutor executor = executorFactory.makeExecutor(request, channel);
 			Response response = executor.execute();
 			if (isCloseResponse(response))
 				break;

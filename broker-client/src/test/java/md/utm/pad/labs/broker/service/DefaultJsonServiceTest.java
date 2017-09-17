@@ -1,4 +1,4 @@
-package md.utm.pad.labs.broker.client.service;
+package md.utm.pad.labs.broker.service;
 
 import static org.junit.Assert.*;
 

@@ -3,6 +3,7 @@ package md.utm.pad.labs.broker.client;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -15,7 +16,7 @@ import md.utm.pad.labs.broker.ClientChannel;
 import md.utm.pad.labs.broker.Message;
 import md.utm.pad.labs.broker.ReceiveMessageResponse;
 import md.utm.pad.labs.broker.Request;
-import md.utm.pad.labs.broker.client.service.JsonService;
+import md.utm.pad.labs.broker.service.JsonService;
 
 public class SessionTest {
 	private static final String GET_MESSAGE_RESPONSE = "{\"type\":\"response\",\"payload\":\"success\",\"message\":{\"properties\":[],\"payload\":\"Test\"}}";
@@ -63,7 +64,7 @@ public class SessionTest {
 	public void canReceiveMessagesFromTheDefaultQueue() {
 		Message message = session.receiveMessage();
 		verify(jsonService).toJson(new Request("receive", ""));
-		verify(jsonService).fromJson(anyString(), eq(ReceiveMessageResponse.class));
+		verify(jsonService, atLeastOnce()).fromJson(anyString(), eq(ReceiveMessageResponse.class));
 		assertEquals(new Message("Test"), message);
 	}
 
@@ -71,7 +72,7 @@ public class SessionTest {
 	public void canReceiveMessagesFromExistingQueues() {
 		Message message = session.receiveMessage(session.createQueue("EM_TEST.Q"));
 		verify(jsonService).toJson(new Request("receive", "EM_TEST.Q"));
-		verify(jsonService).fromJson(anyString(), eq(ReceiveMessageResponse.class));
+		verify(jsonService, atLeastOnce()).fromJson(anyString(), eq(ReceiveMessageResponse.class));
 		assertEquals(new Message("Test"), message);
 	}
 }
