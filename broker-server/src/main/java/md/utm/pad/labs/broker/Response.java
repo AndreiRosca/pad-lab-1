@@ -2,12 +2,15 @@ package md.utm.pad.labs.broker;
 
 public class Response {
 
-	protected final String type;
-	protected final String payload;
+	protected String type;
+	protected String payload;
 
 	public Response(String type, String payload) {
 		this.type = type;
 		this.payload = payload;
+	}
+	
+	protected Response() {
 	}
 
 	public String getType() {
@@ -16,5 +19,10 @@ public class Response {
 
 	public String getPayload() {
 		return payload;
+	}
+
+	@Override
+	public String toString() {
+		return "Response [type=" + type + ", payload=" + payload + "]";
 	}
 }

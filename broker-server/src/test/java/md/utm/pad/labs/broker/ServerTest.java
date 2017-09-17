@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ServerTest {
@@ -46,6 +47,7 @@ public class ServerTest {
 	}
 
 	@Test
+	@Ignore
 	public void serverCanHandleClients() throws Exception {
 		waitForServerToStart();
 		Socket s = new Socket("localhost", 9999);

@@ -1,7 +1,6 @@
 package md.utm.pad.labs.broker;
 
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyObject;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -26,7 +25,7 @@ public class ClientHandlerImplTest {
 
 		@Before
 		public void setUp() {
-			when(channel.readLine()).thenReturn(jsonRequest, System.lineSeparator());
+			when(channel.readLine()).thenReturn(jsonRequest, (String) null);
 			when(factory.makeRequest(anyString())).thenReturn(new Request("send", "<payload>", "EM_TEST.Q"));
 		}
 
@@ -50,7 +49,7 @@ public class ClientHandlerImplTest {
 
 		@Before
 		public void setUp() {
-			when(channel.readLine()).thenReturn(sendMessageRequest, System.lineSeparator());
+			when(channel.readLine()).thenReturn(sendMessageRequest, (String) null);
 			when(factory.makeRequest(anyString())).thenReturn(new Request("send", "EM_TEST.Q", "<payload>"));
 			when(context.receiveMessage(anyString())).thenReturn(new Message("<payload>"));
 			handler = new ClientHandlerImpl(channel, factory, context);

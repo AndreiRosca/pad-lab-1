@@ -18,7 +18,7 @@ public class ClientHandlerImplIntegrationTest {
 
 	@Before
 	public void setUp() {
-		when(channel.readLine()).thenReturn(sendMessageRequest, System.lineSeparator());
+		when(channel.readLine()).thenReturn(sendMessageRequest, (String) null);
 		handler = new ClientHandlerImpl(channel, factory, context);
 		context.createQueue("EM_TEST.Q");
 	}

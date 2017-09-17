@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BrokerContext {
-	private static final String DEFAULT_QUEUE_NAME = "__EM_DEFAULT.Q__";
+	private static final String DEFAULT_QUEUE_NAME = "__EnterpriseMessaging_DEFAULT.QUEUE__";
 
 	private final Map<String, MessageQueue> queues = new ConcurrentHashMap<>();
 
