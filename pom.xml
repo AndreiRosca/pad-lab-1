@@ -4,9 +4,16 @@
 	<groupId>md.utm.pad.labs</groupId>
 	<artifactId>pad-lab-1</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
 	<properties>
 		<java.version>1.8</java.version>
 	</properties>
+
+	<modules>
+		<module>broker-client</module>
+		<module>broker-server</module>
+	</modules>
 
 	<build>
 		<plugins>
