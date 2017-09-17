@@ -12,6 +12,10 @@ public class Request {
 		this.payload = payload;
 	}
 
+	public Request(String command, String targetQueueName) {
+		this(command, targetQueueName, "");
+	}
+
 	protected Request() {
 	}
 
