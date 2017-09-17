@@ -52,7 +52,7 @@ public class Session {
 		ClientChannel channel = connection.getClientChannel();
 		StringBuilder payload = new StringBuilder();
 		String line;
-		while ((line = channel.readLine()).trim().length() > 0) {
+		while ((line = channel.readLine()) != null && line.trim().length() > 0) {
 			payload.append(line);
 		}
 		return payload.toString();

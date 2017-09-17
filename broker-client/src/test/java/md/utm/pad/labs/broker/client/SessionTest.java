@@ -27,7 +27,7 @@ public class SessionTest {
 	@Before
 	public void setUp() {
 		when(connection.getClientChannel()).thenReturn(channel);
-		when(channel.readLine()).thenReturn(GET_MESSAGE_RESPONSE, System.lineSeparator());
+		when(channel.readLine()).thenReturn(GET_MESSAGE_RESPONSE, (String) null);
 		when(jsonService.fromJson(anyString(), eq(ReceiveMessageResponse.class)))
 				.thenReturn(new ReceiveMessageResponse("response", "success", new Message("Test")));
 		session = new Session(connection, jsonService);
