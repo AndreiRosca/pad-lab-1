@@ -27,6 +27,8 @@ public class RequestExecutorFactory {
 			return new CreateQueueRequestExecutor(request);
 		else if (request.getCommand().equalsIgnoreCase("subscribe"))
 			return new SubscribeToQueueRequestExecutor(request, channel);
+		else if (request.getCommand().equalsIgnoreCase("multicast"))
+			return new SendMulticastMessage(request);
 		throw new InvalidRequestException("Invalid request type. Expected send|receive.");
 	}
 
@@ -87,7 +89,21 @@ public class RequestExecutorFactory {
 
 		@Override
 		public Response execute() {
-			brokerContext.registerSubscriber(request.getTargetQueueName(), new Subscriber(channel, request.getTargetQueueName()));
+			brokerContext.registerSubscriber(request.getTargetQueueName(),
+					new Subscriber(channel, request.getTargetQueueName()));
+			return new Response("response", "success");
+		}
+	}
+
+	private class SendMulticastMessage extends RequestExecutor {
+
+		public SendMulticastMessage(Request request) {
+			super(request);
+		}
+
+		@Override
+		public Response execute() {
+			brokerContext.sendMulticastMessage(request.getTargetQueueName(), new Message(request.getPayload()));
 			return new Response("response", "success");
 		}
 	}

@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import md.utm.pad.labs.broker.subscriber.Subscriber;
 
@@ -22,6 +24,16 @@ public class BrokerContext {
 		if (queueSubscribers != null) {
 			queueSubscribers.forEach(s -> s.consumeMessage(message));
 		}
+	}
+
+	public void sendMulticastMessage(String queueNamePattern, Message message) {
+		Pattern pattern = Pattern.compile(queueNamePattern);
+		queues.forEach((queueName, messageQueue) -> {
+			Matcher matcher = pattern.matcher(queueNamePattern);
+			if (matcher.matches()) {
+				messageQueue.addMessage(message);
+			}
+		});
 	}
 
 	public void sendMessage(String queueName, Message message) {
