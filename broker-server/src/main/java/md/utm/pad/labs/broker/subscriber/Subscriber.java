@@ -15,7 +15,11 @@ public class Subscriber {
 	public Subscriber(ClientChannel channel, String queueName) {
 		this.channel = channel;
 		this.queueName = queueName;
-		jsonService = new DefaultJsonService();
+		jsonService = createJsonService();
+	}
+	
+	protected JsonService createJsonService() {
+		return new DefaultJsonService();
 	}
 
 	public void consumeMessage(Message message) {
