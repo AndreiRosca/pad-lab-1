@@ -38,19 +38,29 @@ public class Session implements Runnable, AutoCloseable {
 	public void run() {
 		while (!stopRequested) {
 			String jsonResponse = readResponse();
-			if (jsonResponse != null && jsonResponse.trim().isEmpty())
+			if (jsonResponse == null)
+				break;
+			if (jsonResponse.trim().isEmpty())
 				continue;
 			ReceiveMessageResponse response = jsonService.fromJson(jsonResponse, ReceiveMessageResponse.class);
 			if (response.getType().equalsIgnoreCase("subscriptionMessage")) {
-				messageListeners.get(response.getPayload()).forEach((listener) -> listener.onMessage(response.getMessage()));
+				pushMessageToListeners(response);
 			} else {
-				try {
-					pendingResponses.put(response);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+				putResponseInQueue(response);
 			}
 		}
+	}
+
+	private void putResponseInQueue(ReceiveMessageResponse response) {
+		try {
+			pendingResponses.put(response);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void pushMessageToListeners(ReceiveMessageResponse response) {
+		messageListeners.get(response.getPayload()).forEach((listener) -> listener.onMessage(response.getMessage()));
 	}
 
 	private Response takeResponseFromQueue() {
