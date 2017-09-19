@@ -1,16 +1,17 @@
 package md.utm.pad.labs.broker;
 
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import de.bechte.junit.runners.context.HierarchicalContextRunner;
-import md.utm.pad.labs.broker.service.JsonService;
 import md.utm.pad.labs.broker.subscriber.Subscriber;
 
 @RunWith(HierarchicalContextRunner.class)
@@ -19,37 +20,45 @@ public class BrokerContextTest {
 	public class BasicTests {
 		BrokerContext context = new BrokerContext();
 
-		@Test
-		public void canCreateNewQueues() {
-			context.createQueue("EM_FUNKY.Q");
-			assertTrue(context.queueExists("EM_FUNKY.Q"));
+		@Before
+		public void setUp() {
+			context.createQueue("AAPL.Q");
+			context.createQueue("Amazon.Q");
 		}
 
 		@Test
-		public void canSendMessages() {
-			context.createQueue("EM_TEST.Q");
-			context.sendMessage("EM_TEST.Q", new Message("Welcome!!!"));
-			assertEquals(1, context.getQueueDepth("EM_TEST.Q"));
+		public void canCreateNewQueues() {
+			assertTrue(context.queueExists("AAPL.Q"));
+			assertTrue(context.queueExists("Amazon.Q"));
+		}
+
+		@Test
+		public void whenSendingAMessage_QueueDepthIncreases() {
+			context.sendMessage("AAPL.Q", new Message("<payload>"));
+			assertEquals(1, context.getQueueDepth("AAPL.Q"));
 		}
 
 		@Test
 		public void canReceiveMessages() {
-			final String queueName = "EM_TEST.Q";
-			context.createQueue(queueName);
-			context.sendMessage(queueName, new Message("Welcome!!!"));
-			Message message = context.receiveMessage(queueName);
-			assertEquals(new Message("Welcome!!!"), message);
-			assertEquals(0, context.getQueueDepth(queueName));
+			context.sendMessage("AAPL.Q", new Message("<payload>"));
+			Message message = context.receiveMessage("AAPL.Q");
+			assertEquals(new Message("<payload>"), message);
+			assertEquals(0, context.getQueueDepth("AAPL.Q"));
 		}
 
 		@Test
-		public void canSendMessagesToDefaultQueue() {
-			context.sendMessage(new Message("Welcome!!!"));
+		public void whenSendingAMessageWithoutSpecifyingTheQueueName_ItGetsSentToTheDefaultQueue() {
+			context.sendMessage(new Message("<payload>"));
 			assertEquals(1, context.getQueueDepth());
 		}
 
+		@Test(expected = BrokerContext.NullMessageException.class)
+		public void whenSendingANullMessage_AnExceptionGetsThrown() {
+			context.sendMessage(null);
+		}
+
 		@Test
-		public void canReceiveMessageFromDefaultQuue() {
+		public void whenReceivingAMessageWithoutSpecifyingTheQueueName_ItIsReceivedFromTheDefaultQueue() {
 			Message messageToSend = new Message("Welcome!!!");
 			context.sendMessage(messageToSend);
 			Message message = context.receiveMessage();
@@ -58,60 +67,92 @@ public class BrokerContextTest {
 		}
 
 		@Test(expected = BrokerContext.InvalidQueueNameException.class)
-		public void whenCreatingQueueWithInvalidNameAnExceptionGetsThrown() {
+		public void whenCreatingAQueueWithAnEmptyName_AnExceptionGetsThrown() {
 			context.createQueue("");
 		}
 
+		@Test(expected = BrokerContext.InvalidQueueNameException.class)
+		public void whenCreatingAQueueWithANullName_AnExceptionGetsThrown() {
+			context.createQueue(null);
+		}
+
+		@Test(expected = BrokerContext.UnknownQueueException.class)
+		public void whenSendingAMessageToAnUnexistingQueue_AnExceptionGetsThrown() {
+			context.sendMessage("<UnexistingQueue>", new Message("<payload>"));
+		}
+
+		@Test(expected = BrokerContext.UnknownQueueException.class)
+		public void whenReceivingAMessageFromAnUnexistingQueue_AnExceptionGetsThrown() {
+			context.sendMessage(new Message("<payload>"));
+			context.receiveMessage("<UnexistingQueue>");
+		}
 	}
 
 	public class SubscriptionTests {
 		BrokerContext context = new BrokerContext();
-		JsonService jsonService = mock(JsonService.class);
-		ClientChannel channel = mock(ClientChannel.class);
 
-		@Test
-		public void whenSendingMessageToAQueueWithListeners_ListenersAreNotified() {
-			String queueName = "EM_FUNKY.Q";
-			Subscriber subscriber = new Subscriber(channel, queueName) {
-				protected JsonService createJsonService() {
-					return jsonService;
-				}
-			};
-			context.createQueue(queueName);
-			context.registerSubscriber(queueName, subscriber);
-			context.sendMessage(queueName, new Message("Hello"));
-			verify(channel).write(anyString());
+		@Before
+		public void setUp() {
+			context.createQueue("AAPL.Q");
+			context.createQueue("Amazon.Q");
 		}
 
 		@Test
-		public void whenSendingMessageToAQueueWithoutListeners_ListenersOfOtherQueuesAreNotInvoked() {
-			String subscriptionQueue = "EM_SUBSCRIBERS.Q";
-			String queueWithoutSubscribers = "EM_NO_SUBSCRIBERS";
-			Subscriber subscriber = new Subscriber(channel, subscriptionQueue) {
-				protected JsonService createJsonService() {
-					return jsonService;
-				}
-			};
-			context.createQueue(subscriptionQueue);
-			context.createQueue(queueWithoutSubscribers);
-			context.registerSubscriber(subscriptionQueue, subscriber);
-			context.sendMessage(queueWithoutSubscribers, new Message("Hello"));
-			verify(channel, never()).write(anyString());
-		}
-		
-		@Test
-		public void canSendMulticastMessages() {
-			context.createQueue("Ma");
-			context.createQueue("Mb");
-			context.createQueue("AAPL");
-			Subscriber subscriber = mock(Subscriber.class);
-			context.registerSubscriber("Mb", subscriber);
+		public void whenSendingMessageToAQueueWithSubscribers_TheSubscribersAreCalled() {
 			Subscriber aaplSubscriber = mock(Subscriber.class);
-			context.registerSubscriber("AAPL", aaplSubscriber);
-			
-			context.sendMulticastMessage("M.*", new Message("Test"));
-			verify(subscriber).consumeMessage(new Message("Test"));
-			verify(aaplSubscriber, never()).consumeMessage(new Message("Test"));
+			context.registerSubscriber("AAPL.Q", aaplSubscriber);
+			context.sendMessage("AAPL.Q", new Message("<payload>"));
+			verify(aaplSubscriber).consumeMessage(new Message("<payload>"));
+		}
+
+		@Test
+		public void whenSendingMessageToAQueueWithoutSubscribers_UnmatchedSubscribersAreNotInvoked() {
+			Subscriber aaplSubscriber = mock(Subscriber.class);
+			context.registerSubscriber("AAPL.Q", aaplSubscriber);
+			context.sendMessage("Amazon.Q", new Message("<payload>"));
+			verify(aaplSubscriber, never()).consumeMessage(anyObject());
+		}
+
+		@Test(expected = BrokerContext.NullSubscriberException.class)
+		public void whenRegisteringANullSubscriber_AnExceptionGetsThrown() {
+			context.registerSubscriber("AAPL.Q", null);
+		}
+
+		@Test(expected = BrokerContext.UnknownQueueException.class)
+		public void whenRegisteringASubscriberToAnUnregisteredQueue_AnExceptionGetsThrown() {
+			Subscriber subscriber = mock(Subscriber.class);
+			context.registerSubscriber("<UnregisteredQueue>", subscriber);
+		}
+	}
+
+	public class MulticastMessagesTests {
+		BrokerContext context = new BrokerContext();
+
+		@Before
+		public void setUp() {
+			context.createQueue("AAPL.Q");
+			context.createQueue("Amazon.Q");
+		}
+
+		@Test
+		public void whenSendingAMulticastMessage_UnmatchedSubscribersShouldNotBeCalled() {
+			Subscriber aaplSubscriber = mock(Subscriber.class);
+			context.registerSubscriber("AAPL.Q", aaplSubscriber);
+			context.sendMulticastMessage("Ama.+", new Message("<payload>"));
+			verify(aaplSubscriber, never()).consumeMessage(anyObject());
+		}
+
+		@Test
+		public void whenSendingAMulticastMessage_MatchedSubscribersShouldBeCalled() {
+			Subscriber aaplSubscriber = mock(Subscriber.class);
+			context.registerSubscriber("AAPL.Q", aaplSubscriber);
+			context.sendMulticastMessage("A.+", new Message("<payload>"));
+			verify(aaplSubscriber).consumeMessage(new Message("<payload>"));
+		}
+
+		@Test(expected = BrokerContext.InvalidQueueNamePatternException.class)
+		public void whenSendingAMulticastMessageWithAnInvalidQueueNamePattern_AnExceptionShouldBeThrown() {
+			context.sendMulticastMessage("[", new Message("<payload>"));
 		}
 	}
 }
