@@ -2,17 +2,18 @@ package md.utm.pad.labs.broker;
 
 import md.utm.pad.labs.broker.executor.RequestExecutor;
 import md.utm.pad.labs.broker.executor.RequestExecutorFactory;
+import md.utm.pad.labs.broker.service.JsonService;
 
 public class ClientHandlerImpl implements ClientHandler {
 
 	private final ClientChannel channel;
-	private final RequestResponseFactory factory;
+	private final JsonService jsonService;
 	private final BrokerContext brokerContext;
 	private RequestExecutorFactory executorFactory;
 
-	public ClientHandlerImpl(ClientChannel channel, RequestResponseFactory factory, BrokerContext brokerContext) {
+	public ClientHandlerImpl(ClientChannel channel, JsonService jsonService, BrokerContext brokerContext) {
 		this.channel = channel;
-		this.factory = factory;
+		this.jsonService = jsonService;
 		this.brokerContext = brokerContext;
 		this.executorFactory = createRequestExecutorFactory();
 	}
@@ -27,7 +28,7 @@ public class ClientHandlerImpl implements ClientHandler {
 			tryHandleClient();
 		} catch (Exception e) {
 			e.printStackTrace(System.out);
-			channel.write(factory.makeResponse(new Response("error", e.getMessage())));
+			channel.write(jsonService.toJson(new Response("error", e.getMessage())));
 		} finally {
 			channel.close();
 		}
@@ -38,12 +39,12 @@ public class ClientHandlerImpl implements ClientHandler {
 			String jsonRequest = readJsonRequest();
 			if (jsonRequest.isEmpty())
 				continue;
-			Request request = factory.makeRequest(jsonRequest);
+			Request request = jsonService.fromJson(jsonRequest, Request.class);
 			RequestExecutor executor = executorFactory.makeExecutor(request, channel);
 			Response response = executor.execute();
 			if (isCloseResponse(response))
 				break;
-			channel.write(factory.makeResponse(response));
+			channel.write(jsonService.toJson(response));
 		} while (true);
 	}
 

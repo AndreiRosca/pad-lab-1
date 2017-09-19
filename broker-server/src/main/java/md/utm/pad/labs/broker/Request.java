@@ -16,6 +16,10 @@ public class Request {
 		this(command, targetQueueName, "");
 	}
 
+	public Request(String command) {
+		this(command, "");
+	}
+
 	protected Request() {
 	}
 
