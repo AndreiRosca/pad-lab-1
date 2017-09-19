@@ -98,5 +98,20 @@ public class BrokerContextTest {
 			context.sendMessage(queueWithoutSubscribers, new Message("Hello"));
 			verify(channel, never()).write(anyString());
 		}
+		
+		@Test
+		public void canSendMulticastMessages() {
+			context.createQueue("Ma");
+			context.createQueue("Mb");
+			context.createQueue("AAPL");
+			Subscriber subscriber = mock(Subscriber.class);
+			context.registerSubscriber("Mb", subscriber);
+			Subscriber aaplSubscriber = mock(Subscriber.class);
+			context.registerSubscriber("AAPL", aaplSubscriber);
+			
+			context.sendMulticastMessage("M.*", new Message("Test"));
+			verify(subscriber).consumeMessage(new Message("Test"));
+			verify(aaplSubscriber, never()).consumeMessage(new Message("Test"));
+		}
 	}
 }

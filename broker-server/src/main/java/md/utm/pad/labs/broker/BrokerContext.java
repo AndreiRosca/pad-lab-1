@@ -29,9 +29,9 @@ public class BrokerContext {
 	public void sendMulticastMessage(String queueNamePattern, Message message) {
 		Pattern pattern = Pattern.compile(queueNamePattern);
 		queues.forEach((queueName, messageQueue) -> {
-			Matcher matcher = pattern.matcher(queueNamePattern);
+			Matcher matcher = pattern.matcher(queueName);
 			if (matcher.matches()) {
-				messageQueue.addMessage(message);
+				sendMessage(queueName, message);
 			}
 		});
 	}
