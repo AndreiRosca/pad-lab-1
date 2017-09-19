@@ -39,6 +39,8 @@ public class JsonServiceSpy implements JsonService {
 			pendingResponses.add(new Response("response", "success"));
 		} else if (request.getCommand().equalsIgnoreCase("receive")) {
 			pendingResponses.add(new ReceiveMessageResponse("response", "success", new Message("<payload>")));
+		} else if (request.getCommand().equalsIgnoreCase("subscribe")) {
+			pendingResponses.add(new Response("response", "success"));
 		}
 	}
 

@@ -85,4 +85,12 @@ public class SessionTest {
 		assertEquals(new Request("receive", "Amazon.Q"), jsonService.getConvertedRequest());
 		assertEquals(new Message("<payload>"), message);
 	}
+	
+	@Test
+	public void canRegisterAQueueAsyncSubscriber() {
+		MessageListener messageListener = mock(MessageListener.class);
+		session.registerSubscriber("AAPL.Q", messageListener);
+		assertEquals(new Request("subscribe", "AAPL.Q"), jsonService.getConvertedRequest());
+		verify(channel, atLeastOnce()).write(anyString());
+	}
 }
