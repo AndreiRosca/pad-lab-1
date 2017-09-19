@@ -3,6 +3,7 @@ package md.utm.pad.labs.broker.client;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URI;
+import java.net.UnknownHostException;
 
 import md.utm.pad.labs.broker.ClientChannel;
 import md.utm.pad.labs.broker.Request;
@@ -16,12 +17,10 @@ public class Connection implements AutoCloseable {
 	private final URI uri;
 	private ClientChannel channel;
 
-	public Connection(URI uri) {
+	public Connection(URI uri) throws UnknownProtocolException {
+		if (!uri.getScheme().equals("tcp"))
+			throw new UnknownProtocolException("Expected the 'tcp://' protocol.");
 		this.uri = uri;
-	}
-
-	protected ClientChannel createClientChannel(Socket s) {
-		return new SocketClientChannel(s);
 	}
 
 	ClientChannel getClientChannel() {
@@ -32,15 +31,21 @@ public class Connection implements AutoCloseable {
 		return new Session(this, getJsonService());
 	}
 
+	protected ClientChannel createClientChannel(Socket s) {
+		return new SocketClientChannel(s);
+	}
+
 	protected JsonService getJsonService() {
 		return new DefaultJsonService();
 	}
 
-	public void start() throws UnknownProtocolException {
+	protected Socket createSocket() throws UnknownHostException, IOException {
+		return new Socket(uri.getHost(), uri.getPort());
+	}
+
+	public void start() {
 		try {
-			if (!uri.getScheme().equals("tcp"))
-				throw new UnknownProtocolException("Expected the 'tcp://' protocol.");
-			socket = new Socket(uri.getHost(), uri.getPort());
+			socket = createSocket();
 			channel = createClientChannel(socket);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
