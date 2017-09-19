@@ -17,12 +17,17 @@ public class Subscriber {
 		this.queueName = queueName;
 		jsonService = createJsonService();
 	}
-	
+
 	protected JsonService createJsonService() {
 		return new DefaultJsonService();
 	}
 
 	public void consumeMessage(Message message) {
-		channel.write(jsonService.toJson(new ReceiveMessageResponse("subscriptionMessage", queueName, message)));
+		ReceiveMessageResponse response = new ReceiveMessageResponse("subscriptionMessage", queueName, message);
+		channel.write(jsonService.toJson(response));
+	}
+	
+	public String getQueueName() {
+		return queueName;
 	}
 }
