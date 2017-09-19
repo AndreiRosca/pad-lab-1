@@ -19,15 +19,23 @@ public class Session implements Runnable, AutoCloseable {
 	private final Connection connection;
 	private final JsonService jsonService;
 	private final Map<String, Set<MessageListener>> messageListeners = new ConcurrentHashMap<>();
-	private final BlockingQueue<Response> pendingResponses = new ArrayBlockingQueue<>(10);
+	private final BlockingQueue<Response> pendingResponses = createPendingResponsesCollection();
 	private volatile boolean stopRequested = false;
-	private final Thread responseListenerThread;
+	private Thread responseListenerThread;
 
 	public Session(Connection connection, JsonService jsonService) {
 		this.connection = connection;
 		this.jsonService = jsonService;
+		createResponseListenerThread();
+	}
+
+	protected void createResponseListenerThread() {
 		responseListenerThread = new Thread(this);
 		responseListenerThread.start();
+	}
+
+	protected BlockingQueue<Response> createPendingResponsesCollection() {
+		return new ArrayBlockingQueue<>(10);
 	}
 
 	public void close() {
@@ -43,12 +51,16 @@ public class Session implements Runnable, AutoCloseable {
 			if (jsonResponse.trim().isEmpty())
 				continue;
 			ReceiveMessageResponse response = jsonService.fromJson(jsonResponse, ReceiveMessageResponse.class);
-			if (response.getType().equalsIgnoreCase("subscriptionMessage")) {
+			if (responseIsSubscriptionMessage(response)) {
 				pushMessageToListeners(response);
 			} else {
 				putResponseInQueue(response);
 			}
 		}
+	}
+
+	protected boolean responseIsSubscriptionMessage(ReceiveMessageResponse response) {
+		return response.getType() != null && response.getType().equalsIgnoreCase("subscriptionMessage");
 	}
 
 	private void putResponseInQueue(ReceiveMessageResponse response) {
