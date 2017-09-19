@@ -50,7 +50,7 @@ public class BrokerContext {
 			throw new NullMessageException();
 		if (!queueExists(queueName))
 			throw new UnknownQueueException();
-		queues.getOrDefault(queueName, queues.get(DEFAULT_QUEUE_NAME)).addMessage(message);
+		queues.get(queueName).addMessage(message);
 		publishMessageToSubscribers(queueName, message);
 	}
 
@@ -61,7 +61,7 @@ public class BrokerContext {
 	public Message receiveMessage(String queueName) throws UnknownQueueException {
 		if (!queueExists(queueName))
 			throw new UnknownQueueException();
-		return queues.getOrDefault(queueName, queues.get(DEFAULT_QUEUE_NAME)).receiveMessage();
+		return queues.get(queueName).receiveMessage();
 	}
 
 	public Message receiveMessage() {
@@ -71,7 +71,7 @@ public class BrokerContext {
 	public void createQueue(String queueName) throws InvalidQueueNameException {
 		if (queueName == null || queueName.isEmpty())
 			throw new InvalidQueueNameException();
-		if (!queues.containsKey(queueName))
+		if (!queueExists(queueName))
 			queues.put(queueName, new MessageQueue(queueName));
 	}
 
@@ -79,12 +79,14 @@ public class BrokerContext {
 		return queues.containsKey(queueName);
 	}
 
-	public int getQueueDepth(String queueName) {
-		return queues.getOrDefault(queueName, queues.get(DEFAULT_QUEUE_NAME)).getPendingMessages();
+	public int getQueueDepth(String queueName) throws UnknownQueueException {
+		if (!queueExists(queueName))
+			throw new UnknownQueueException();
+		return queues.get(queueName).getPendingMessages();
 	}
 
 	public int getQueueDepth() {
-		return getQueueDepth("");
+		return getQueueDepth(DEFAULT_QUEUE_NAME);
 	}
 
 	public void registerSubscriber(String queueName, Subscriber subscriber)

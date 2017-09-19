@@ -86,6 +86,11 @@ public class BrokerContextTest {
 			context.sendMessage(new Message("<payload>"));
 			context.receiveMessage("<UnexistingQueue>");
 		}
+
+		@Test(expected = BrokerContext.UnknownQueueException.class)
+		public void whenGettingTheQueueDepthOfAnUnexistingQueue_AnExceptionGetsThrown() {
+			context.getQueueDepth("<UnexistingQueue>");
+		}
 	}
 
 	public class SubscriptionTests {
