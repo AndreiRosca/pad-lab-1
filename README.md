@@ -17,7 +17,6 @@ Pentru a trimite un mesaj,  trebuie de trecut din linia de comandă `cmd` în di
 ```
 mvn exec:java -Dexec.mainClass="md.utm.pad.labs.broker.client.demo.Sender"
 ```
-
 Pentru a primi un mesaj în mod sincron, trebuie de trecut din linia de comandă `cmd` în directoriul *broker-client*, și de executat comanda:
 ```
 mvn exec:java -Dexec.mainClass="md.utm.pad.labs.broker.client.demo.Receiver"
