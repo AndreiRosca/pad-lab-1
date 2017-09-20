@@ -11,7 +11,8 @@ import md.utm.pad.labs.broker.subscriber.SubscriberTest;
 	MessageTest.class,
 	ClientHandlerImplTest.class,
 	BrokerContextTest.class,
-	SubscriberTest.class
+	SubscriberTest.class,
+	ServerTest.class
 })
 public class UnitTests {
 

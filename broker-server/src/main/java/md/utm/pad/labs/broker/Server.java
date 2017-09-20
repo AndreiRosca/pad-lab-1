@@ -10,21 +10,25 @@ public class Server implements Runnable {
 	private static final int MAX_THREADS = 5;
 
 	private final ClientHandlerFactory clientHandlerFactory;
-	private final ExecutorService executorService = Executors.newFixedThreadPool(MAX_THREADS);
+	private final ExecutorService executorService = createExecutorService();
 	private volatile ServerSocket serverSocket;
-	private volatile boolean stopRequested = false;
-	private volatile boolean isRunning = false;
+	protected volatile boolean stopRequested = false;
+	protected volatile boolean serverStarted = false;
 
 	public Server(ClientHandlerFactory clientHandlerFactory) {
 		this.clientHandlerFactory = clientHandlerFactory;
 	}
 
+	protected ExecutorService createExecutorService() {
+		return Executors.newFixedThreadPool(MAX_THREADS);
+	}
+
 	public void start() {
 		executorService.submit(this);
+		serverStarted = true;
 	}
 
 	public void run() {
-		isRunning = true;
 		try {
 			startServingClients();
 		} catch (IOException e) {
@@ -34,13 +38,17 @@ public class Server implements Runnable {
 	}
 
 	private void startServingClients() throws IOException {
-		serverSocket = new ServerSocket(9999);
+		serverSocket = createServerSocket();
 		while (!stopRequested) {
 			Socket socket = serverSocket.accept();
 			ClientChannel channel = getClientChannel(socket);
 			ClientHandler handler = clientHandlerFactory.makeClient(channel);
 			serveClientInNewThread(handler);
 		}
+	}
+
+	protected ServerSocket createServerSocket() throws IOException {
+		return new ServerSocket(9999);
 	}
 
 	protected void serveClientInNewThread(ClientHandler handler) {
@@ -51,11 +59,9 @@ public class Server implements Runnable {
 		return new SocketClientChannel(socket);
 	}
 
-	public boolean isRunning() {
-		return isRunning && !stopRequested;
-	}
-
-	public void stop() {
+	public void stop() throws IllegalServerStateException {
+		if (!serverStarted)
+			throw new IllegalServerStateException("Must start the server before trying to stop it.");
 		stopRequested = true;
 		executorService.shutdownNow();
 		closeServerSocketIfNeeded();
@@ -70,4 +76,11 @@ public class Server implements Runnable {
 		}
 	}
 
+	public static class IllegalServerStateException extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+
+		public IllegalServerStateException(String message) {
+			super(message);
+		}
+	}
 }
