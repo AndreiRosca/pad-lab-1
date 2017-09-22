@@ -7,6 +7,7 @@ import java.util.Set;
 
 public class Message {
 
+	private Long id;
 	private final Map<String, String> properties = new HashMap<>();
 	private String payload = "";
 
@@ -15,6 +16,14 @@ public class Message {
 
 	public Message(String payload) {
 		this.payload = payload;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 	public void setProperty(String name, String value) {
