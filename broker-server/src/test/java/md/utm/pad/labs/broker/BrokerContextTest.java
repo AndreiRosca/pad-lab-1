@@ -61,7 +61,7 @@ public class BrokerContextTest {
 
 		@Test
 		public void whenReceivingAMessageWithoutSpecifyingTheQueueName_ItIsReceivedFromTheDefaultQueue() {
-			Message messageToSend = new Message("Welcome!!!");
+			Message messageToSend = new Message("<payload>");
 			context.sendMessage(messageToSend);
 			Message message = context.receiveMessage();
 			assertEquals(messageToSend, message);
@@ -109,6 +109,16 @@ public class BrokerContextTest {
 			Message message = new Message("<payload>");
 			context.sendDurableMessage("AAPL.Q", message);
 			verify(repository).persist(message);
+		}
+
+		@Test(expected = BrokerContext.UnknownQueueException.class)
+		public void whenSendingADurableMessageToAnUnexistingQueue_AnExceptionGetsThrown() {
+			context.sendDurableMessage("<UnexistingQueue>", new Message("<payload>"));
+		}
+
+		@Test(expected = BrokerContext.NullMessageException.class)
+		public void whenSendingANullDurableMessage_AnExceptionGetsThrown() {
+			context.sendDurableMessage("AAPL.Q", null);
 		}
 	}
 
