@@ -124,7 +124,12 @@ public class Session implements Runnable, AutoCloseable {
 		Request request = new Request("receive", queueName);
 		connection.getClientChannel().write(jsonService.toJson(request));
 		ReceiveMessageResponse response = (ReceiveMessageResponse) takeResponseFromQueue();
-		return response.getMessage();
+		Message message = response.getMessage();
+		if (message.getId() != null) {
+			Request ackRequest = new Request("acknowledgeReceive", "", String.valueOf(message.getId()));
+			connection.getClientChannel().write(jsonService.toJson(ackRequest));			
+		}
+		return message;
 	}
 
 	private String readResponse() {
@@ -154,5 +159,13 @@ public class Session implements Runnable, AutoCloseable {
 			messageListeners.put(queueName, new CopyOnWriteArraySet<>());
 		}
 		messageListeners.get(queueName).add(listener);
+	}
+
+	public void sendDurableMessage(Queue queue, Message message) {
+		Request request = new Request("durableSend", queue.getName(), message.getPayload());
+		connection.getClientChannel().write(jsonService.toJson(request));
+		Response response = takeResponseFromQueue();
+		if (isErrorResponse(response))
+			;// throw something
 	}
 }

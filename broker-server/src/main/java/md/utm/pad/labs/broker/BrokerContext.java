@@ -68,8 +68,8 @@ public class BrokerContext {
 			throw new NullMessageException();
 		if (!queueExists(queueName))
 			throw new UnknownQueueException();
-		messageRepository.persist(message);
-		sendMessage(queueName, message);
+		Message persistedMessage = messageRepository.persist(message);
+		sendMessage(queueName, persistedMessage);
 	}
 
 	public Message receiveMessage(String queueName) throws UnknownQueueException {

@@ -1,31 +1,23 @@
 package md.utm.pad.labs.broker.client;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import md.utm.pad.labs.broker.ClientChannel;
 import md.utm.pad.labs.broker.Message;
-import md.utm.pad.labs.broker.ReceiveMessageResponse;
 import md.utm.pad.labs.broker.Request;
 import md.utm.pad.labs.broker.Response;
-import md.utm.pad.labs.broker.service.JsonService;
 
 public class SessionTest {
-	// private static final String GET_MESSAGE_RESPONSE =
-	// "{\"type\":\"response\",\"payload\":\"success\",\"message\":{\"properties\":[],\"payload\":\"Test\"}}";
 	private static final String SUCCESS_RESPONSE = "{'type':'response', 'payload':'success'}";
 
 	Connection connection = mock(Connection.class);
@@ -50,7 +42,7 @@ public class SessionTest {
 	@Test
 	public void canCreateNewQueues() {
 		Queue queue = session.createQueue("AAPL.Q");
-		assertEquals(new Request("createQueue", "AAPL.Q"), jsonService.getConvertedRequest());
+		assertEquals(new Request("createQueue", "AAPL.Q"), jsonService.popConvertedRequest());
 		assertEquals("AAPL.Q", queue.getName());
 		verify(channel).write(anyString());
 	}
@@ -59,7 +51,7 @@ public class SessionTest {
 	public void canSendMessagesToTheDefaultQueue() {
 		Message message = session.createMessage("<payload>");
 		session.sendMessage(message);
-		assertEquals(new Request("send", "", message.getPayload()), jsonService.getConvertedRequest());
+		assertEquals(new Request("send", "", message.getPayload()), jsonService.popConvertedRequest());
 		verify(channel).write(anyString());
 	}
 
@@ -68,29 +60,41 @@ public class SessionTest {
 		Message message = session.createMessage("<payload>");
 		Queue queue = new Queue(session, "AAPL.Q");
 		session.sendMessage(queue, message);
-		assertEquals(new Request("send", "AAPL.Q", message.getPayload()), jsonService.getConvertedRequest());
+		assertEquals(new Request("send", "AAPL.Q", message.getPayload()), jsonService.popConvertedRequest());
+		verify(channel, atLeastOnce()).write(anyString());
+	}
+
+	@Test
+	public void canSendDurableMessagesToExistingQueues() {
+		Message message = session.createMessage("<payload>");
+		Queue queue = new Queue(session, "AAPL.Q");
+		session.sendDurableMessage(queue, message);
+		assertEquals(new Request("durableSend", "AAPL.Q", message.getPayload()), jsonService.popConvertedRequest());
 		verify(channel, atLeastOnce()).write(anyString());
 	}
 
 	@Test
 	public void canReceiveMessagesFromTheDefaultQueue() {
 		Message message = session.receiveMessage();
-		assertEquals(new Request("receive", ""), jsonService.getConvertedRequest());
+		assertEquals(new Request("receive", ""), jsonService.popConvertedRequest());
+		assertEquals(new Request("acknowledgeReceive", "", String.valueOf(message.getId())), jsonService.popConvertedRequest());
 		assertEquals(new Message("<payload>"), message);
 	}
 
 	@Test
 	public void canReceiveMessagesFromExistingQueues() {
 		Message message = session.receiveMessage(session.createQueue("Amazon.Q"));
-		assertEquals(new Request("receive", "Amazon.Q"), jsonService.getConvertedRequest());
+		assertEquals(new Request("createQueue", "Amazon.Q"), jsonService.popConvertedRequest());
+		assertEquals(new Request("receive", "Amazon.Q"), jsonService.popConvertedRequest());
+		assertEquals(new Request("acknowledgeReceive", "", String.valueOf(message.getId())), jsonService.popConvertedRequest());
 		assertEquals(new Message("<payload>"), message);
 	}
-	
+
 	@Test
 	public void canRegisterAQueueAsyncSubscriber() {
 		MessageListener messageListener = mock(MessageListener.class);
 		session.registerSubscriber("AAPL.Q", messageListener);
-		assertEquals(new Request("subscribe", "AAPL.Q"), jsonService.getConvertedRequest());
+		assertEquals(new Request("subscribe", "AAPL.Q"), jsonService.popConvertedRequest());
 		verify(channel, atLeastOnce()).write(anyString());
 	}
 }

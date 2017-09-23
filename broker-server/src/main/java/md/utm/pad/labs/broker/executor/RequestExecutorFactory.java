@@ -137,7 +137,10 @@ public class RequestExecutorFactory {
 
 		@Override
 		public Response execute() {
-			long messageId = Long.valueOf(request.getPayload());
+			String payload = request.getPayload();
+			if ("".equals(payload))
+				return null;
+			long messageId = Long.valueOf(payload);
 			brokerContext.acknowledgeReceive(messageId);
 			return null;
 		}
