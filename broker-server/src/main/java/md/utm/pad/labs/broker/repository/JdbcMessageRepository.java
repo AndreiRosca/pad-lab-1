@@ -20,6 +20,8 @@ public class JdbcMessageRepository implements MessageRepository {
 	private static final String SELECT_QUEUE_NAMES_SQL = "select queue_name from broker.message_queues";
 	private static final String CREATE_QUEUE_SQL = "insert into broker.message_queues(queue_name) values (?)";
 	private static final String SELECT_QUEUE_ID_BY_NAME_SQL = "select id from broker.message_queues where queue_name = ?";
+	private static final String GET_MESSAGES_BY_QUEUE_NAME_SQL = "select m.id, m.message_payload from broker.messages m join broker.message_queues mq on m.queue_id = mq.id where mq.queue_name = ?";
+	private static final String GET_MESSAGES_PROPERTIES_SQL = "select property_name, property_value from broker.message_properties where message_id = ?";
 
 	private final DataSourceProperties properties;
 
@@ -73,7 +75,7 @@ public class JdbcMessageRepository implements MessageRepository {
 		try (PreparedStatement statement = connection.prepareStatement(INSERT_MESSAGE_SQL,
 				Statement.RETURN_GENERATED_KEYS)) {
 			statement.setString(1, message.getPayload());
-			statement.setLong(2, getQueueId(message.getQueueName()));
+			statement.setLong(2, getQueueId(connection, message.getQueueName()));
 			statement.executeUpdate();
 			ResultSet resultSet = statement.getGeneratedKeys();
 			if (resultSet.next())
@@ -84,22 +86,15 @@ public class JdbcMessageRepository implements MessageRepository {
 		}
 	}
 
-	private long getQueueId(String queueName) {
-		Connection connection = null;
-		try {
-			connection = getConnection();
-			try (PreparedStatement statement = connection.prepareStatement(SELECT_QUEUE_ID_BY_NAME_SQL)) {
-				statement.setString(1, queueName);
-				ResultSet resultSet = statement.executeQuery();
-				if (resultSet.next())
-					return resultSet.getLong(1);
-				else
-					throw new RuntimeException("Can't get queue id by name.");
-			}
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
-		} finally {
-			closeConnection(connection);
+	private long getQueueId(Connection connection, String queueName) throws SQLException {
+		connection = getConnection();
+		try (PreparedStatement statement = connection.prepareStatement(SELECT_QUEUE_ID_BY_NAME_SQL)) {
+			statement.setString(1, queueName);
+			ResultSet resultSet = statement.executeQuery();
+			if (resultSet.next())
+				return resultSet.getLong(1);
+			else
+				throw new RuntimeException("Can't get queue id by name.");
 		}
 	}
 
@@ -161,7 +156,9 @@ public class JdbcMessageRepository implements MessageRepository {
 				ResultSet resultSet = statement.executeQuery(SELECT_QUEUE_NAMES_SQL);
 				while (resultSet.next()) {
 					String queueName = resultSet.getString(1);
-					queues.put(queueName, new MessageQueue(queueName));
+					MessageQueue messageQueue = new MessageQueue(queueName);
+					loadQueueMessages(connection, messageQueue);
+					queues.put(queueName, messageQueue);
 				}
 			}
 			connection.commit();
@@ -171,6 +168,28 @@ public class JdbcMessageRepository implements MessageRepository {
 			throw new RuntimeException(e);
 		} finally {
 			closeConnection(connection);
+		}
+	}
+
+	private void loadQueueMessages(Connection connection, MessageQueue messageQueue) throws SQLException {
+		try (PreparedStatement statement = connection.prepareStatement(GET_MESSAGES_BY_QUEUE_NAME_SQL)) {
+			statement.setString(1, messageQueue.getName());
+			ResultSet resultSet = statement.executeQuery();
+			while (resultSet.next()) {
+				Message message = new Message(resultSet.getString(1), resultSet.getLong(2), resultSet.getString(3));
+				loadMessageProperties(connection, message);
+				messageQueue.addMessage(message);
+			}
+		}
+	}
+
+	private void loadMessageProperties(Connection connection, Message message) throws SQLException {
+		try (PreparedStatement statement = connection.prepareStatement(GET_MESSAGES_PROPERTIES_SQL)) {
+			statement.setLong(1, message.getId());
+			ResultSet resultSet = statement.executeQuery();
+			while (resultSet.next()) {
+				message.setProperty(resultSet.getString(1), resultSet.getString(2));
+			}
 		}
 	}
 

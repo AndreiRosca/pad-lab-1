@@ -18,6 +18,12 @@ public class Message {
 	public Message(String payload) {
 		this.payload = payload;
 	}
+	
+	public Message(String payload, long id, String queueName) {
+		this.payload = payload;
+		this.id = id;
+		this.queueName = queueName;
+	}
 
 	public Long getId() {
 		return id;
