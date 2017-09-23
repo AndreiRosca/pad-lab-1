@@ -12,13 +12,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import de.bechte.junit.runners.context.HierarchicalContextRunner;
+import md.utm.pad.labs.broker.repository.MessageRepository;
 import md.utm.pad.labs.broker.subscriber.Subscriber;
 
 @RunWith(HierarchicalContextRunner.class)
 public class BrokerContextTest {
 
 	public class BasicTests {
-		BrokerContext context = new BrokerContext();
+		MessageRepository repository = mock(MessageRepository.class);
+		BrokerContext context = new BrokerContext(repository);
 
 		@Before
 		public void setUp() {
@@ -93,8 +95,26 @@ public class BrokerContextTest {
 		}
 	}
 
+	public class DurableMessagesTests {
+		MessageRepository repository = mock(MessageRepository.class);
+		BrokerContext context = new BrokerContext(repository);
+
+		@Before
+		public void setUp() {
+			context.createQueue("AAPL.Q");
+		}
+
+		@Test
+		public void whenSendingADurableMessage_ItIsPersistenInTheDatabase() {
+			Message message = new Message("<payload>");
+			context.sendDurableMessage("AAPL.Q", message);
+			verify(repository).persist(message);
+		}
+	}
+
 	public class SubscriptionTests {
-		BrokerContext context = new BrokerContext();
+		MessageRepository repository = mock(MessageRepository.class);
+		BrokerContext context = new BrokerContext(repository);
 
 		@Before
 		public void setUp() {
@@ -131,7 +151,8 @@ public class BrokerContextTest {
 	}
 
 	public class MulticastMessagesTests {
-		BrokerContext context = new BrokerContext();
+		MessageRepository repository = mock(MessageRepository.class);
+		BrokerContext context = new BrokerContext(repository);
 
 		@Before
 		public void setUp() {

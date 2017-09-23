@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import org.junit.Before;
 import org.junit.Test;
 
+import md.utm.pad.labs.broker.repository.MessageRepository;
 import md.utm.pad.labs.broker.service.DefaultJsonService;
 import md.utm.pad.labs.broker.service.JsonService;
 
@@ -15,10 +16,11 @@ public class ClientHandlerImplIntegrationTest {
 			+ "\"targetQueueName\": \"EM_TEST.Q\" }";
 	private static final String sendCloseRequest = "{\"command\":\"close\",\"payload\":\"\"}";
 
-	private ClientChannel channel = mock(ClientChannel.class);
-	private JsonService jsonService = new DefaultJsonService();
-	private BrokerContext context = new BrokerContext();
-	private ClientHandlerImpl handler;
+	ClientChannel channel = mock(ClientChannel.class);
+	JsonService jsonService = new DefaultJsonService();
+	MessageRepository repository = mock(MessageRepository.class);
+	BrokerContext context = new BrokerContext(repository);
+	ClientHandlerImpl handler;
 
 	@Before
 	public void setUp() {

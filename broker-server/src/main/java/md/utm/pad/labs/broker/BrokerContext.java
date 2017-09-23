@@ -8,16 +8,21 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import md.utm.pad.labs.broker.repository.MessageRepository;
 import md.utm.pad.labs.broker.subscriber.Subscriber;
 
 public class BrokerContext {
 	private static final String DEFAULT_QUEUE_NAME = "__EnterpriseMessaging_DEFAULT.QUEUE__";
 
-	private final Map<String, MessageQueue> queues = new ConcurrentHashMap<>();
+	private final Map<String, MessageQueue> queues;
 	private final Map<String, Set<Subscriber>> subscribers = new ConcurrentHashMap<>();
+	private final MessageRepository messageRepository;
 
-	public BrokerContext() {
-		createQueue(DEFAULT_QUEUE_NAME);
+	public BrokerContext(MessageRepository messageRepository) {
+		this.messageRepository = messageRepository;
+		queues = messageRepository.findAllMessageQueues();
+		if (!queueExists(DEFAULT_QUEUE_NAME))
+			createQueue(DEFAULT_QUEUE_NAME);
 	}
 
 	private void publishMessageToSubscribers(String queueName, Message message) {
@@ -58,6 +63,15 @@ public class BrokerContext {
 		sendMessage(DEFAULT_QUEUE_NAME, message);
 	}
 
+	public void sendDurableMessage(String queueName, Message message) throws NullMessageException, UnknownQueueException {
+		if (message == null)
+			throw new NullMessageException();
+		if (!queueExists(queueName))
+			throw new UnknownQueueException();
+		messageRepository.persist(message);
+		sendMessage(queueName, message);
+	}
+
 	public Message receiveMessage(String queueName) throws UnknownQueueException {
 		if (!queueExists(queueName))
 			throw new UnknownQueueException();
@@ -71,8 +85,11 @@ public class BrokerContext {
 	public void createQueue(String queueName) throws InvalidQueueNameException {
 		if (queueName == null || queueName.isEmpty())
 			throw new InvalidQueueNameException();
-		if (!queueExists(queueName))
-			queues.put(queueName, new MessageQueue(queueName));
+		if (!queueExists(queueName)) {
+			MessageQueue queue = new MessageQueue(queueName);
+			queues.put(queueName, queue);
+			messageRepository.createQueue(queue);
+		}
 	}
 
 	public boolean queueExists(String queueName) {
