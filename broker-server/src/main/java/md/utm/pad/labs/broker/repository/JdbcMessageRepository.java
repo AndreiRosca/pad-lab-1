@@ -13,12 +13,13 @@ import md.utm.pad.labs.broker.Message;
 import md.utm.pad.labs.broker.MessageQueue;
 
 public class JdbcMessageRepository implements MessageRepository {
-	private static final String INSERT_MESSAGE_SQL = "insert into broker.messages(message_payload) values (?)";
+	private static final String INSERT_MESSAGE_SQL = "insert into broker.messages(message_payload, queue_id) values (?, ?)";
 	private static final String INSERT_MESSAGE_PROPERTIES_SQL = "insert into broker.message_properties(property_name, property_value, message_id) values (?, ?, ?)";
 	private static final String DELETE_MESSAGE_PROPERTIES_SQL = "delete from broker.message_properties where message_id = ?";
 	private static final String DELETE_MESSAGE_SQL = "delete from broker.messages where id = ?";
 	private static final String SELECT_QUEUE_NAMES_SQL = "select queue_name from broker.message_queues";
 	private static final String CREATE_QUEUE_SQL = "insert into broker.message_queues(queue_name) values (?)";
+	private static final String SELECT_QUEUE_ID_BY_NAME_SQL = "select id from broker.message_queues where queue_name = ?";
 
 	private final DataSourceProperties properties;
 
@@ -72,6 +73,7 @@ public class JdbcMessageRepository implements MessageRepository {
 		try (PreparedStatement statement = connection.prepareStatement(INSERT_MESSAGE_SQL,
 				Statement.RETURN_GENERATED_KEYS)) {
 			statement.setString(1, message.getPayload());
+			statement.setLong(2, getQueueId(message.getQueueName()));
 			statement.executeUpdate();
 			ResultSet resultSet = statement.getGeneratedKeys();
 			if (resultSet.next())
@@ -79,6 +81,25 @@ public class JdbcMessageRepository implements MessageRepository {
 			return message;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	private long getQueueId(String queueName) {
+		Connection connection = null;
+		try {
+			connection = getConnection();
+			try (PreparedStatement statement = connection.prepareStatement(SELECT_QUEUE_ID_BY_NAME_SQL)) {
+				statement.setString(1, queueName);
+				ResultSet resultSet = statement.executeQuery();
+				if (resultSet.next())
+					return resultSet.getLong(1);
+				else
+					throw new RuntimeException("Can't get queue id by name.");
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		} finally {
+			closeConnection(connection);
 		}
 	}
 

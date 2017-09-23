@@ -10,6 +10,7 @@ public class Message {
 	private Long id;
 	private final Map<String, String> properties = new HashMap<>();
 	private String payload = "";
+	private String queueName = "";
 
 	public Message() {
 	}
@@ -40,6 +41,14 @@ public class Message {
 
 	public String getPayload() {
 		return payload;
+	}
+
+	public String getQueueName() {
+		return queueName;
+	}
+
+	public void setQueueName(String queueName) {
+		this.queueName = queueName;
 	}
 
 	public Set<String> getPropertyNames() {

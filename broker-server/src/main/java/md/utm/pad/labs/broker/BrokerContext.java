@@ -55,6 +55,7 @@ public class BrokerContext {
 			throw new NullMessageException();
 		if (!queueExists(queueName))
 			throw new UnknownQueueException();
+		message.setQueueName(queueName);
 		queues.get(queueName).addMessage(message);
 		publishMessageToSubscribers(queueName, message);
 	}
@@ -68,6 +69,7 @@ public class BrokerContext {
 			throw new NullMessageException();
 		if (!queueExists(queueName))
 			throw new UnknownQueueException();
+		message.setQueueName(queueName);
 		Message persistedMessage = messageRepository.persist(message);
 		sendMessage(queueName, persistedMessage);
 	}
