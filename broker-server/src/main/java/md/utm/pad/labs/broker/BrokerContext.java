@@ -117,6 +117,10 @@ public class BrokerContext {
 		subscribers.get(queueName).add(subscriber);
 	}
 
+	public void acknowledgeReceive(long messageId) {
+		messageRepository.delete(messageId);
+	}
+
 	public static class InvalidQueueNameException extends RuntimeException {
 		private static final long serialVersionUID = 1L;
 

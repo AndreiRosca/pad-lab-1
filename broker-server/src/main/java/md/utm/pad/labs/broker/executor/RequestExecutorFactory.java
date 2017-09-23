@@ -1,5 +1,9 @@
 package md.utm.pad.labs.broker.executor;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
+
 import md.utm.pad.labs.broker.BrokerContext;
 import md.utm.pad.labs.broker.ClientChannel;
 import md.utm.pad.labs.broker.Message;
@@ -10,26 +14,31 @@ import md.utm.pad.labs.broker.subscriber.Subscriber;
 
 public class RequestExecutorFactory {
 
+	private final Map<String, BiFunction<Request, ClientChannel, RequestExecutor>> executors = new ConcurrentHashMap<>();
 	private final BrokerContext brokerContext;
 
 	public RequestExecutorFactory(BrokerContext brokerContext) {
 		this.brokerContext = brokerContext;
+		setUpExecutors();
+	}
+
+	private void setUpExecutors() {
+		executors.put("send", (request, channel) -> new SendMessageRequestExecutor(request));
+		executors.put("receive", (request, channel) -> new ReceiveMessageRequestExecutor(request));
+		executors.put("close", (request, channel) -> new CloseConnectionRequestExecutor(request));
+		executors.put("createQueue", (request, channel) -> new CreateQueueRequestExecutor(request));
+		executors.put("subscribe", (request, channel) -> new SubscribeToQueueRequestExecutor(request, channel));
+		executors.put("multicast", (request, channel) -> new SendMulticastMessageRequestExecutor(request));
+		executors.put("durableSend", (request, channel) -> new SendDurableMessageRequestExecutor(request));
+		executors.put("acknowledgeReceive", (request, channel) -> new AcknowledgeReceiveRequestExecutor(request));
 	}
 
 	public RequestExecutor makeExecutor(Request request, ClientChannel channel) throws InvalidRequestException {
-		if (request.getCommand().equalsIgnoreCase("send"))
-			return new SendMessageRequestExecutor(request);
-		else if (request.getCommand().equalsIgnoreCase("receive"))
-			return new ReceiveMessageRequestExecutor(request);
-		else if (request.getCommand().equalsIgnoreCase("close"))
-			return new CloseConnectionRequestExecutor(request);
-		else if (request.getCommand().equalsIgnoreCase("createQueue"))
-			return new CreateQueueRequestExecutor(request);
-		else if (request.getCommand().equalsIgnoreCase("subscribe"))
-			return new SubscribeToQueueRequestExecutor(request, channel);
-		else if (request.getCommand().equalsIgnoreCase("multicast"))
-			return new SendMulticastMessage(request);
-		throw new InvalidRequestException("Invalid request type. Expected send|receive.");
+		String command = request.getCommand().toLowerCase();
+		BiFunction<Request, ClientChannel, RequestExecutor> executor = executors.get(command);
+		if (executor == null)
+			throw new InvalidRequestException("Invalid request type.");
+		return executor.apply(request, channel);
 	}
 
 	private class SendMessageRequestExecutor extends RequestExecutor {
@@ -40,6 +49,18 @@ public class RequestExecutorFactory {
 		@Override
 		public Response execute() {
 			brokerContext.sendMessage(request.getTargetQueueName(), new Message(request.getPayload()));
+			return new Response("response", "success");
+		}
+	}
+
+	private class SendDurableMessageRequestExecutor extends RequestExecutor {
+		public SendDurableMessageRequestExecutor(Request request) {
+			super(request);
+		}
+
+		@Override
+		public Response execute() {
+			brokerContext.sendDurableMessage(request.getTargetQueueName(), new Message(request.getPayload()));
 			return new Response("response", "success");
 		}
 	}
@@ -95,9 +116,9 @@ public class RequestExecutorFactory {
 		}
 	}
 
-	private class SendMulticastMessage extends RequestExecutor {
+	private class SendMulticastMessageRequestExecutor extends RequestExecutor {
 
-		public SendMulticastMessage(Request request) {
+		public SendMulticastMessageRequestExecutor(Request request) {
 			super(request);
 		}
 
@@ -105,6 +126,20 @@ public class RequestExecutorFactory {
 		public Response execute() {
 			brokerContext.sendMulticastMessage(request.getTargetQueueName(), new Message(request.getPayload()));
 			return new Response("response", "success");
+		}
+	}
+
+	private class AcknowledgeReceiveRequestExecutor extends RequestExecutor {
+
+		public AcknowledgeReceiveRequestExecutor(Request request) {
+			super(request);
+		}
+
+		@Override
+		public Response execute() {
+			long messageId = Long.valueOf(request.getPayload());
+			brokerContext.acknowledgeReceive(messageId);
+			return null;
 		}
 	}
 

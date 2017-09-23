@@ -120,6 +120,12 @@ public class BrokerContextTest {
 		public void whenSendingANullDurableMessage_AnExceptionGetsThrown() {
 			context.sendDurableMessage("AAPL.Q", null);
 		}
+		
+		@Test
+		public void whenAcknowledgingADurableMessage_ItGetsDeleted() {
+			context.acknowledgeReceive(1);
+			verify(repository).delete(1);
+		}
 	}
 
 	public class SubscriptionTests {

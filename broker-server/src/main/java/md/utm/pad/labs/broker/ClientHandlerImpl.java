@@ -42,6 +42,8 @@ public class ClientHandlerImpl implements ClientHandler {
 			Request request = jsonService.fromJson(jsonRequest, Request.class);
 			RequestExecutor executor = executorFactory.makeExecutor(request, channel);
 			Response response = executor.execute();
+			if (response == null)
+				continue;
 			if (isCloseResponse(response))
 				break;
 			channel.write(jsonService.toJson(response));
