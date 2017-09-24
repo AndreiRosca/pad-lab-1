@@ -1,8 +1,10 @@
 package md.utm.pad.labs.broker.client;
 
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -181,5 +183,13 @@ public class Session implements Runnable, AutoCloseable {
 		public ErrorResponseException(Response response) {
 			super("Server returned the error response: " + response.toString());
 		}
+	}
+
+	public void batchSubscribe(MessageListener messageListener, String...queueNames) {
+		StringJoiner joiner = new StringJoiner(", ");
+		Arrays.stream(queueNames).forEach(joiner::add);
+		Request request = new Request("batchSubscribe", joiner.toString());
+		connection.getClientChannel().write(jsonService.toJson(request));
+		Response response = getResponse();
 	}
 }

@@ -100,6 +100,14 @@ public class SessionTest {
 	}
 	
 	@Test
+	public void canBatchRegisterSubscribersToMultipleQueues() {
+		MessageListener messageListener = mock(MessageListener.class);
+		session.batchSubscribe(messageListener, "AAPL.Q", "Amazon.Q");
+		assertEquals(new Request("batchSubscribe", "AAPL.Q, Amazon.Q"), jsonService.popConvertedRequest());
+		verify(channel, atLeastOnce()).write(anyString());
+	}
+
+	@Test
 	public void canSendMessagesWithByteArraysAsPayload() throws UnsupportedEncodingException {
 		Message message = session.createMessage("<payload>".getBytes("UTF-8"));
 		assertEquals(new Message("PHBheWxvYWQ+"), message);
