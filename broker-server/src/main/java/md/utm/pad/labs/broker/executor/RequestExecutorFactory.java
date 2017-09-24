@@ -3,6 +3,8 @@ package md.utm.pad.labs.broker.executor;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import md.utm.pad.labs.broker.BrokerContext;
 import md.utm.pad.labs.broker.ClientChannel;
@@ -28,6 +30,7 @@ public class RequestExecutorFactory {
 		executors.put("close", (request, channel) -> new CloseConnectionRequestExecutor(request));
 		executors.put("createQueue", (request, channel) -> new CreateQueueRequestExecutor(request));
 		executors.put("subscribe", (request, channel) -> new SubscribeToQueueRequestExecutor(request, channel));
+		executors.put("batchSubscribe", (request, channel) -> new BatchSubscribeToQueueRequestExecutor(request, channel));
 		executors.put("multicast", (request, channel) -> new SendMulticastMessageRequestExecutor(request));
 		executors.put("durableSend", (request, channel) -> new SendDurableMessageRequestExecutor(request));
 		executors.put("acknowledgeReceive", (request, channel) -> new AcknowledgeReceiveRequestExecutor(request));
@@ -37,7 +40,7 @@ public class RequestExecutorFactory {
 		String command = request.getCommand();
 		BiFunction<Request, ClientChannel, RequestExecutor> executor = executors.get(command);
 		if (executor == null)
-			throw new InvalidRequestException("Invalid request type.");
+			throw new InvalidRequestException(String.format("Invalid request command (%s).", command));
 		return executor.apply(request, channel);
 	}
 
@@ -116,6 +119,31 @@ public class RequestExecutorFactory {
 		}
 	}
 
+	private class BatchSubscribeToQueueRequestExecutor extends RequestExecutor {
+		private final ClientChannel channel;
+
+		public BatchSubscribeToQueueRequestExecutor(Request request, ClientChannel channel) {
+			super(request);
+			this.channel = channel;
+		}
+
+		@Override
+		public Response execute() {
+			Pattern pattern = Pattern.compile("(?:\\s*(?:\\\"([^\\\"]*)\\\"|([^,]+))\\s*,?)+?");
+			Matcher matcher = pattern.matcher(request.getTargetQueueName());
+			while (matcher.find())
+				registerSubscriber(matcher);
+			return new Response("response", "success");
+		}
+
+		private void registerSubscriber(Matcher matcher) {
+			String queueName = matcher.group(1);
+			if (queueName == null)
+				queueName = matcher.group(2);
+			brokerContext.registerSubscriber(queueName, new Subscriber(channel, request.getTargetQueueName()));
+		}
+	}
+
 	private class SendMulticastMessageRequestExecutor extends RequestExecutor {
 
 		public SendMulticastMessageRequestExecutor(Request request) {
@@ -148,9 +176,6 @@ public class RequestExecutorFactory {
 
 	public static class InvalidRequestException extends RuntimeException {
 		private static final long serialVersionUID = 1L;
-
-		public InvalidRequestException() {
-		}
 
 		public InvalidRequestException(String message) {
 			super(message);
