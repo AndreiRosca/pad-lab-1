@@ -34,7 +34,7 @@ public class RequestExecutorFactory {
 	}
 
 	public RequestExecutor makeExecutor(Request request, ClientChannel channel) throws InvalidRequestException {
-		String command = request.getCommand().toLowerCase();
+		String command = request.getCommand();
 		BiFunction<Request, ClientChannel, RequestExecutor> executor = executors.get(command);
 		if (executor == null)
 			throw new InvalidRequestException("Invalid request type.");
