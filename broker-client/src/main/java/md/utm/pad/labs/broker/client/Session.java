@@ -25,7 +25,7 @@ public class Session implements Runnable, AutoCloseable {
 	private final JsonService jsonService;
 	private final Map<String, Set<MessageListener>> messageListeners = new ConcurrentHashMap<>();
 	private final BlockingQueue<Response> pendingResponses = createPendingResponsesCollection();
-	private volatile boolean stopRequested = false;
+	protected volatile boolean stopRequested = false;
 	private Thread responseListenerThread;
 
 	public Session(Connection connection, JsonService jsonService) {
@@ -78,7 +78,9 @@ public class Session implements Runnable, AutoCloseable {
 	}
 
 	private void pushMessageToListeners(ReceiveMessageResponse response) {
-		messageListeners.get(response.getPayload()).forEach((listener) -> listener.onMessage(response.getMessage()));
+		Set<MessageListener> listeners = messageListeners.get(response.getPayload());
+		if (listeners != null)
+			listeners.forEach((listener) -> listener.onMessage(response.getMessage()));
 	}
 
 	private Response takeResponseFromQueue() {
@@ -151,7 +153,7 @@ public class Session implements Runnable, AutoCloseable {
 		while ((line = channel.readLine()) != null && line.trim().length() > 0) {
 			payload.append(line);
 		}
-		return payload.toString();
+		return (line == null && payload.length() == 0) ? null : payload.toString();
 	}
 
 	public Message receiveMessage(Queue queue) {
@@ -166,7 +168,7 @@ public class Session implements Runnable, AutoCloseable {
 			addMessageListener(queueName, messageListener);
 	}
 
-	private void addMessageListener(String queueName, MessageListener listener) {
+	protected void addMessageListener(String queueName, MessageListener listener) {
 		if (!messageListeners.containsKey(queueName)) {
 			messageListeners.put(queueName, new CopyOnWriteArraySet<>());
 		}
