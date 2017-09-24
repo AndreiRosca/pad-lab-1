@@ -52,6 +52,13 @@ public class RequestExecutorFactoryTest {
 		verify(brokerContext).registerSubscriber(eq("IBM.Q"), anyObject());
 		assertSuccessfullResponse(response);
 	}
+	
+	@Test
+	public void whenPatternBatchSubscribing_WeShouldRegisterAsSubscribersToEveryReceivedQueue() {
+		Response response = makeAndExecuteRequestExecutor(new Request("patternBatchSubscribe", "A.+"));
+		verify(brokerContext).registerSubscriberByPattern(eq("A.+"), anyObject());
+		assertSuccessfullResponse(response);
+	}
 
 	private Response makeAndExecuteRequestExecutor(Request request) {
 		RequestExecutor executor = factory.makeExecutor(request, channel);

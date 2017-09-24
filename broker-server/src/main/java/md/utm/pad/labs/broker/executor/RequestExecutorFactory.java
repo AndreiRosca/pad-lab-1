@@ -34,6 +34,7 @@ public class RequestExecutorFactory {
 		executors.put("multicast", (request, channel) -> new SendMulticastMessageRequestExecutor(request));
 		executors.put("durableSend", (request, channel) -> new SendDurableMessageRequestExecutor(request));
 		executors.put("acknowledgeReceive", (request, channel) -> new AcknowledgeReceiveRequestExecutor(request));
+		executors.put("patternBatchSubscribe", (request, channel) -> new PatternSubscribeRequestExecutor(request, channel));
 	}
 
 	public RequestExecutor makeExecutor(Request request, ClientChannel channel) throws InvalidRequestException {
@@ -114,6 +115,22 @@ public class RequestExecutorFactory {
 		@Override
 		public Response execute() {
 			brokerContext.registerSubscriber(request.getTargetQueueName(),
+					new Subscriber(channel, request.getTargetQueueName()));
+			return new Response("response", "success");
+		}
+	}
+	
+	private class PatternSubscribeRequestExecutor extends RequestExecutor {
+		private final ClientChannel channel;
+
+		public PatternSubscribeRequestExecutor(Request request, ClientChannel channel) {
+			super(request);
+			this.channel = channel;
+		}
+
+		@Override
+		public Response execute() {
+			brokerContext.registerSubscriberByPattern(request.getTargetQueueName(),
 					new Subscriber(channel, request.getTargetQueueName()));
 			return new Response("response", "success");
 		}

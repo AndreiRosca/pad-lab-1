@@ -122,30 +122,37 @@ public class BrokerContext {
 	public void acknowledgeReceive(long messageId) {
 		messageRepository.delete(messageId);
 	}
+	
+	public void registerSubscriberByPattern(String queueNamePattern, Subscriber subscriber) throws InvalidQueueNamePatternException {
+		try {
+			Pattern pattern = Pattern.compile(queueNamePattern);
+			registerSubscriber(pattern, subscriber);
+		} catch (PatternSyntaxException e) {
+			throw new InvalidQueueNamePatternException(e);
+		}
+	}
+
+	private void registerSubscriber(Pattern pattern, Subscriber subscriber) {
+		queues.forEach((queueName, messageQueue) -> {
+			Matcher matcher = pattern.matcher(queueName);
+			if (matcher.matches()) {
+				registerSubscriber(queueName, subscriber);
+			}
+		});
+	}
 
 	public static class InvalidQueueNameException extends RuntimeException {
 		private static final long serialVersionUID = 1L;
 
 		public InvalidQueueNameException() {
 		}
-
-		public InvalidQueueNameException(String message) {
-			super(message);
-		}
 	}
 
 	public static class InvalidQueueNamePatternException extends RuntimeException {
 		private static final long serialVersionUID = 1L;
 
-		public InvalidQueueNamePatternException() {
-		}
-
 		public InvalidQueueNamePatternException(Exception e) {
 			super(e);
-		}
-
-		public InvalidQueueNamePatternException(String message) {
-			super(message);
 		}
 	}
 
@@ -154,14 +161,6 @@ public class BrokerContext {
 
 		public NullMessageException() {
 		}
-
-		public NullMessageException(Exception e) {
-			super(e);
-		}
-
-		public NullMessageException(String message) {
-			super(message);
-		}
 	}
 
 	public static class NullSubscriberException extends RuntimeException {
@@ -169,28 +168,12 @@ public class BrokerContext {
 
 		public NullSubscriberException() {
 		}
-
-		public NullSubscriberException(Exception e) {
-			super(e);
-		}
-
-		public NullSubscriberException(String message) {
-			super(message);
-		}
 	}
 
 	public static class UnknownQueueException extends RuntimeException {
 		private static final long serialVersionUID = 1L;
 
 		public UnknownQueueException() {
-		}
-
-		public UnknownQueueException(Exception e) {
-			super(e);
-		}
-
-		public UnknownQueueException(String message) {
-			super(message);
 		}
 	}
 }

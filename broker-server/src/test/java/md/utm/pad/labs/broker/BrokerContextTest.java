@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -138,6 +139,21 @@ public class BrokerContextTest {
 		public void setUp() {
 			context.createQueue("AAPL.Q");
 			context.createQueue("Amazon.Q");
+		}
+
+		@Test
+		public void whenSubscribingByPattern_WeShouldSubscribeByMatchedQueueNames() {
+			Subscriber subscriber = mock(Subscriber.class);
+			context = spy(context);
+			context.registerSubscriberByPattern("A.+", subscriber);
+			verify(context).registerSubscriber("AAPL.Q", subscriber);
+			verify(context).registerSubscriber("Amazon.Q", subscriber);
+		}
+		
+		@Test(expected = BrokerContext.InvalidQueueNamePatternException.class)
+		public void whenSubscribingByPatternWithAnInvalidPattern_AnExceptionShouldBeThrown() {
+			Subscriber subscriber = mock(Subscriber.class);
+			context.registerSubscriberByPattern("[", subscriber);
 		}
 
 		@Test
