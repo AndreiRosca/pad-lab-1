@@ -31,6 +31,7 @@ public class Session implements Runnable, AutoCloseable {
 
 	protected void createResponseListenerThread() {
 		responseListenerThread = new Thread(this);
+		responseListenerThread.setDaemon(true);
 		responseListenerThread.start();
 	}
 
@@ -86,10 +87,15 @@ public class Session implements Runnable, AutoCloseable {
 	public Queue createQueue(String queueName) {
 		Request request = new Request("createQueue", queueName);
 		connection.getClientChannel().write(jsonService.toJson(request));
+		Response response = getResponse();
+		return new Queue(this, queueName);
+	}
+
+	private Response getResponse() throws ErrorResponseException {
 		Response response = takeResponseFromQueue();
 		if (isErrorResponse(response))
-			;// throw something
-		return new Queue(this, queueName);
+			throw new ErrorResponseException(response);
+		return response;
 	}
 
 	public Message createMessage(String payload) {
@@ -99,17 +105,13 @@ public class Session implements Runnable, AutoCloseable {
 	public void sendMessage(Message message) {
 		Request request = new Request("send", "", message.getPayload());
 		connection.getClientChannel().write(jsonService.toJson(request));
-		Response response = takeResponseFromQueue();
-		if (isErrorResponse(response))
-			;// throw something
+		Response response = getResponse();
 	}
 
 	public void sendMessage(Queue queue, Message message) {
 		Request request = new Request("send", queue.getName(), message.getPayload());
 		connection.getClientChannel().write(jsonService.toJson(request));
-		Response response = takeResponseFromQueue();
-		if (isErrorResponse(response))
-			;// throw something
+		Response response = getResponse();
 	}
 
 	private boolean isErrorResponse(Response response) {
@@ -127,7 +129,7 @@ public class Session implements Runnable, AutoCloseable {
 		Message message = response.getMessage();
 		if (message.getId() != null) {
 			Request ackRequest = new Request("acknowledgeReceive", "", String.valueOf(message.getId()));
-			connection.getClientChannel().write(jsonService.toJson(ackRequest));			
+			connection.getClientChannel().write(jsonService.toJson(ackRequest));
 		}
 		return message;
 	}
@@ -164,8 +166,14 @@ public class Session implements Runnable, AutoCloseable {
 	public void sendDurableMessage(Queue queue, Message message) {
 		Request request = new Request("durableSend", queue.getName(), message.getPayload());
 		connection.getClientChannel().write(jsonService.toJson(request));
-		Response response = takeResponseFromQueue();
-		if (isErrorResponse(response))
-			;// throw something
+		Response response = getResponse();
+	}
+
+	public static class ErrorResponseException extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+
+		public ErrorResponseException(Response response) {
+			super("Server returned the error response: " + response.toString());
+		}
 	}
 }
