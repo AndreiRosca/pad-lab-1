@@ -42,11 +42,13 @@ public class JdbcMessageRepositoryIntegrationTest {
 		when(statement.getGeneratedKeys()).thenReturn(resultSet);
 		when(resultSet.next()).thenReturn(true);
 		when(resultSet.getLong(1)).thenReturn(1L);
+		when(statement.executeQuery()).thenReturn(resultSet);
 	}
 
 	@Test
 	public void canPersistMessages() throws SQLException {
 		Message message = new Message("<payload>");
+		message.setQueueName("AAPL.Q");
 		message.setProperty("<prop_name>", "<prop_value>");
 		repository.persist(message);
 		assertNotNull(message.getId());

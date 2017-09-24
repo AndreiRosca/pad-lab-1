@@ -6,6 +6,7 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -107,6 +108,7 @@ public class BrokerContextTest {
 		@Test
 		public void whenSendingADurableMessage_ItIsPersistenInTheDatabase() {
 			Message message = new Message("<payload>");
+			when(repository.persist(anyObject())).thenReturn(message);
 			context.sendDurableMessage("AAPL.Q", message);
 			verify(repository).persist(message);
 		}
