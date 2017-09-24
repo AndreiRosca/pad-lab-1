@@ -106,6 +106,20 @@ public class SessionTest {
 		assertEquals(new Request("batchSubscribe", "AAPL.Q, Amazon.Q"), jsonService.popConvertedRequest());
 		verify(channel, atLeastOnce()).write(anyString());
 	}
+	
+	@Test
+	public void canBatchRegisterSubscribersToMultipleQueuesByPattern() {
+		MessageListener messageListener = mock(MessageListener.class);
+		session.batchSubscribeByPattern(messageListener, "A.+");
+		assertEquals(new Request("patternBatchSubscribe", "A.+"), jsonService.popConvertedRequest());
+		verify(channel, atLeastOnce()).write(anyString());
+	} 
+	
+	@Test(expected = Session.InvalidQueueNamePatternException.class)
+	public void whenBatchRegisteringSubscribersToMultipleQueuesWithAnInvalidPattern_AnExceptionGetsThrown() {
+		MessageListener messageListener = mock(MessageListener.class);
+		session.batchSubscribeByPattern(messageListener, "[");
+	}
 
 	@Test
 	public void canSendMessagesWithByteArraysAsPayload() throws UnsupportedEncodingException {

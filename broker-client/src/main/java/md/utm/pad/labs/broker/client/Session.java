@@ -9,6 +9,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import md.utm.pad.labs.broker.ClientChannel;
 import md.utm.pad.labs.broker.Message;
@@ -191,5 +193,28 @@ public class Session implements Runnable, AutoCloseable {
 		Request request = new Request("batchSubscribe", joiner.toString());
 		connection.getClientChannel().write(jsonService.toJson(request));
 		Response response = getResponse();
+	}
+
+	public void batchSubscribeByPattern(MessageListener messageListener, String queueNamePattern) throws InvalidQueueNamePatternException {
+		checkQueueNamePattern(queueNamePattern);
+		Request request = new Request("patternBatchSubscribe", queueNamePattern);
+		connection.getClientChannel().write(jsonService.toJson(request));
+		Response response = getResponse();
+	}
+
+	private void checkQueueNamePattern(String queueNamePattern) throws InvalidQueueNamePatternException {
+		try {
+			Pattern pattern = Pattern.compile(queueNamePattern);
+		} catch (PatternSyntaxException e) {
+			throw new InvalidQueueNamePatternException(e);
+		}
+	}
+
+	public static class InvalidQueueNamePatternException extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+
+		public InvalidQueueNamePatternException(PatternSyntaxException cause) {
+			super(cause);
+		}
 	}
 }

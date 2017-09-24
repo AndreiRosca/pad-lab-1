@@ -30,6 +30,7 @@ public class JsonServiceSpy implements JsonService {
 		responses.put("durableSend", new Response("response", "success"));
 		responses.put("acknowledgeReceive", null);
 		responses.put("batchSubscribe", new Response("response", "success"));
+		responses.put("patternBatchSubscribe", new Response("response", "success"));
 	}
 
 	public BlockingQueue<Response> getPendingResponses() {
