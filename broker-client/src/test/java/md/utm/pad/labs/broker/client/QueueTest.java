@@ -17,7 +17,7 @@ public class QueueTest {
 	}
 
 	@Test
-	public void whenRegisteringAListenerThoughAQueue_TheListenerIsSentToSession() {
+	public void whenRegisteringAListenerThroughAQueue_TheListenerIsSentToSession() {
 		Queue queue = new Queue(session, "EM_TEST.Q");
 		MessageListener listener = mock(MessageListener.class);
 		queue.setMessageListener(listener);
