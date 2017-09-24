@@ -20,7 +20,7 @@ public class JdbcMessageRepository implements MessageRepository {
 	private static final String SELECT_QUEUE_NAMES_SQL = "select queue_name from broker.message_queues";
 	private static final String CREATE_QUEUE_SQL = "insert into broker.message_queues(queue_name) values (?)";
 	private static final String SELECT_QUEUE_ID_BY_NAME_SQL = "select id from broker.message_queues where queue_name = ?";
-	private static final String GET_MESSAGES_BY_QUEUE_NAME_SQL = "select m.id, m.message_payload from broker.messages m join broker.message_queues mq on m.queue_id = mq.id where mq.queue_name = ? order by m.id";
+	private static final String GET_MESSAGES_BY_QUEUE_NAME_SQL = "select m.message_payload, m.id, mq.queue_name from broker.messages m join broker.message_queues mq on m.queue_id = mq.id where mq.queue_name = ? order by m.id";
 	private static final String GET_MESSAGES_PROPERTIES_SQL = "select property_name, property_value from broker.message_properties where message_id = ?";
 
 	private final DataSourceProperties properties;

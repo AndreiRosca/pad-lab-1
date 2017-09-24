@@ -13,9 +13,9 @@ public class Sender {
 		try (Connection connection = new Connection(new URI("tcp://localhost:9999"));) {
 			connection.start();
 			try (Session session = connection.createSession();) {
-				Message message = session.createMessage("This is a simple test!");
+				Message message = session.createMessage(args[0]);
 				Queue queue = session.createQueue("EM_FUNKY.Q");
-				session.sendMessage(queue, message);
+				session.sendDurableMessage(queue, message);
 				System.out.println("The message was successfully sent!");
 			}
 		} catch (URISyntaxException e) {
