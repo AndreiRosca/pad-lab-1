@@ -1,5 +1,6 @@
 package md.utm.pad.labs.broker;
 
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,6 +62,14 @@ public class Message {
 		return Collections.unmodifiableSet(properties.keySet());
 	}
 
+	public byte[] decodePayload() throws InvalidPayloadException {
+		try {
+			return Base64.getDecoder().decode(payload);			
+		} catch (IllegalArgumentException e) {
+			throw new InvalidPayloadException("Payload is not base64 encoded.", e);
+		}
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -95,5 +104,13 @@ public class Message {
 	@Override
 	public String toString() {
 		return "Message{properties=" + properties + ", payload=" + payload + "}";
+	}
+	
+	public static class InvalidPayloadException extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+
+		public InvalidPayloadException(String message, IllegalArgumentException cause) {
+			super(message, cause);
+		}
 	}
 }

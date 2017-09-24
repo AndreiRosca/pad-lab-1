@@ -2,6 +2,8 @@ package md.utm.pad.labs.broker;
 
 import static org.junit.Assert.*;
 
+import java.io.UnsupportedEncodingException;
+
 import org.junit.Test;
 
 public class MessageTest {
@@ -23,5 +25,18 @@ public class MessageTest {
 	@Test
 	public void newlyCreatedMessageHasEmptyPayload() {
 		assertEquals("", message.getPayload());
+	}
+
+	@Test
+	public void canGetMessagePayloadAsByteArray() throws UnsupportedEncodingException {
+		message = new Message("PHBheWxvYWQ+");
+		byte[] decodedPayload = message.decodePayload();
+		assertArrayEquals("<payload>".getBytes("UTF-8"), decodedPayload);
+	}
+
+	@Test(expected = Message.InvalidPayloadException.class)
+	public void whenTryingGettingTheUnencodedMessagePayloadAsByteArray_AnExceptionGetsThrown() {
+		message = new Message("q");
+		message.decodePayload();
 	}
 }

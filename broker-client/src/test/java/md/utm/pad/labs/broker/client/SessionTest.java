@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.BlockingQueue;
 
 import org.junit.Before;
@@ -96,5 +97,11 @@ public class SessionTest {
 		session.registerSubscriber("AAPL.Q", messageListener);
 		assertEquals(new Request("subscribe", "AAPL.Q"), jsonService.popConvertedRequest());
 		verify(channel, atLeastOnce()).write(anyString());
+	}
+	
+	@Test
+	public void canSendMessagesWithByteArraysAsPayload() throws UnsupportedEncodingException {
+		Message message = session.createMessage("<payload>".getBytes("UTF-8"));
+		assertEquals(new Message("PHBheWxvYWQ+"), message);
 	}
 }

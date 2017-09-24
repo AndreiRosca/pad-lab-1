@@ -1,5 +1,6 @@
 package md.utm.pad.labs.broker.client;
 
+import java.util.Base64;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -100,6 +101,11 @@ public class Session implements Runnable, AutoCloseable {
 
 	public Message createMessage(String payload) {
 		return new Message(payload);
+	}
+
+	public Message createMessage(byte[] payload) {
+		String payloadAsBase64 = Base64.getEncoder().encodeToString(payload);
+		return new Message(payloadAsBase64);
 	}
 
 	public void sendMessage(Message message) {
