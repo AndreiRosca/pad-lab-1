@@ -1,6 +1,7 @@
 # pad-lab-1 (Agent de mesaje)
 Acest repositoriu conține implementarea lucrării nr.1 la programarea aplicațiilor distribuite.
 Condiția poate fi găsită [aici](https://github.com/Alexx-G/PAD-labs/blob/master/PAD-lab1.md)
+Descrierea protocolului de comunicare poate fi găsită în folderul *docs*
 ##### *Sarcini implemenate*
 - Implementarea unei cozi de mesaje
 - Implementarea mecanismului de rutare a mesajelor
