@@ -16,7 +16,7 @@ mvn exec:java -Dexec.mainClass="md.utm.pad.labs.broker.demo.Main"
 Astfel serverul va fi pornit. Stoparea lui se face prin tastarea a oricărei taste în linia de comandă.
 Pentru a trimite un mesaj,  trebuie de trecut din linia de comandă `cmd` în directoriul *broker-client*, și de executat comanda:
 ```
-mvn exec:java -Dexec.mainClass="md.utm.pad.labs.broker.client.demo.Sender"
+mvn exec:java -Dexec.mainClass="md.utm.pad.labs.broker.client.demo.Sender" -Dexec.args="<PAYLOAD>'"
 ```
 Pentru a primi un mesaj în mod sincron, trebuie de trecut din linia de comandă `cmd` în directoriul *broker-client*, și de executat comanda:
 ```
